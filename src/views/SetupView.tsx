@@ -1,0 +1,289 @@
+import React, { useState } from 'react';
+import { AppTab, InterviewConfig, Question } from '../types';
+import { MicCheck } from '../components/MicCheck';
+import { 
+  Settings, 
+  Search, 
+  Building2, 
+  Clock, 
+  Briefcase, 
+  CheckCircle2, 
+  Play, 
+  Sparkles, 
+  ArrowRight,
+  HelpCircle,
+  RefreshCw,
+  Sliders
+} from 'lucide-react';
+
+interface SetupViewProps {
+  config: InterviewConfig;
+  onChangeConfig: (newConfig: InterviewConfig) => void;
+  onStartSimulation: (questions: Question[]) => void;
+  onSelectTab: (tab: AppTab) => void;
+}
+
+const PRESET_ROLES = [
+  { title: "Software Engineer", dept: "Engineering", icon: "💻" },
+  { title: "Senior Product Designer", dept: "Design", icon: "🎨" },
+  { title: "Product Manager", dept: "Product", icon: "🎯" },
+  { title: "Data Scientist & AI Lead", dept: "Data & ML", icon: "📊" },
+  { title: "Solutions Architect", dept: "Cloud Infra", icon: "☁️" },
+  { title: "Engineering Manager", dept: "Management", icon: "👥" },
+];
+
+const PRESET_COMPANIES = ["Global Tech Corp", "Google", "Amazon", "Meta", "Stripe", "Apple", "McKinsey"];
+
+export const SetupView: React.FC<SetupViewProps> = ({ 
+  config, 
+  onChangeConfig, 
+  onStartSimulation,
+  onSelectTab
+}) => {
+  const [roleInput, setRoleInput] = useState(config.role);
+  const [companyInput, setCompanyInput] = useState(config.company);
+  const [levelInput, setLevelInput] = useState(config.level);
+  const [durationInput, setDurationInput] = useState(config.durationMinutes);
+  const [customNotes, setCustomNotes] = useState(config.customNotes || "");
+  const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
+
+  const handleRoleSelect = (title: string) => {
+    setRoleInput(title);
+  };
+
+  const handleInitialize = async () => {
+    setIsLoadingQuestions(true);
+
+    const updatedConfig: InterviewConfig = {
+      role: roleInput,
+      level: levelInput,
+      company: companyInput,
+      durationMinutes: durationInput,
+      customNotes: customNotes
+    };
+
+    onChangeConfig(updatedConfig);
+
+    try {
+      const response = await fetch("/api/interview/generate-questions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatedConfig)
+      });
+      const data = await response.json();
+      if (data.questions && data.questions.length > 0) {
+        onStartSimulation(data.questions);
+      } else {
+        // Fallback default questions
+        onStartSimulation([]);
+      }
+    } catch (e) {
+      console.warn("API call error, launching with defaults", e);
+      onStartSimulation([]);
+    } finally {
+      setIsLoadingQuestions(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-4xl mx-auto space-y-10">
+        
+        {/* Header */}
+        <div className="text-center space-y-3">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-xs font-bold text-indigo-400">
+            <Sliders className="w-3.5 h-3.5" /> Simulation Configuration
+          </div>
+          <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight">
+            Set the Stage for Your Next Career Leap
+          </h1>
+          <p className="text-sm text-slate-400 max-w-xl mx-auto">
+            Configure your target job role, seniority level, and company domain to generate tailored AI interview rubrics.
+          </p>
+        </div>
+
+        {/* Step 1: Role Selection Grid */}
+        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 space-y-6 shadow-xl">
+          <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center font-bold text-white text-xs">
+                1
+              </div>
+              <h3 className="font-bold text-white text-base">Select Target Role</h3>
+            </div>
+            <span className="text-xs text-slate-400">Choose preset or type custom</span>
+          </div>
+
+          {/* Search/Custom Role Input */}
+          <div className="relative">
+            <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
+            <input
+              type="text"
+              value={roleInput}
+              onChange={(e) => setRoleInput(e.target.value)}
+              placeholder="e.g. Principal Backend Engineer, Senior Product Designer..."
+              className="w-full bg-slate-950 border border-slate-800 rounded-2xl pl-10 pr-4 py-3 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
+            />
+          </div>
+
+          {/* Role Cards Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {PRESET_ROLES.map((r) => {
+              const isSelected = roleInput === r.title;
+              return (
+                <div
+                  key={r.title}
+                  onClick={() => handleRoleSelect(r.title)}
+                  className={`p-4 rounded-2xl border cursor-pointer transition-all flex items-center justify-between ${
+                    isSelected 
+                      ? 'bg-indigo-950/80 border-indigo-500 shadow-lg shadow-indigo-500/20' 
+                      : 'bg-slate-950 border-slate-800/80 hover:border-slate-700'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-xl">{r.icon}</span>
+                    <div>
+                      <div className="text-xs font-bold text-white">{r.title}</div>
+                      <div className="text-[10px] text-slate-400">{r.dept}</div>
+                    </div>
+                  </div>
+                  {isSelected && <CheckCircle2 className="w-4 h-4 text-indigo-400" />}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Step 2: Seniority, Company & Length */}
+        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 space-y-6 shadow-xl">
+          <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center font-bold text-white text-xs">
+                2
+              </div>
+              <h3 className="font-bold text-white text-base">Seniority, Company & Duration</h3>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            
+            {/* Seniority Level Radio Choice */}
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-300">Seniority Level</label>
+              <div className="space-y-2">
+                {(['Junior / Entry', 'Mid-Level', 'Senior / Lead', 'Executive / Director'] as const).map((lvl) => (
+                  <label
+                    key={lvl}
+                    className={`flex items-center justify-between p-3 rounded-xl border text-xs cursor-pointer transition-colors ${
+                      levelInput === lvl ? 'bg-indigo-950/80 border-indigo-500 text-white' : 'bg-slate-950 border-slate-800 text-slate-400'
+                    }`}
+                  >
+                    <span>{lvl}</span>
+                    <input
+                      type="radio"
+                      name="level"
+                      checked={levelInput === lvl}
+                      onChange={() => setLevelInput(lvl)}
+                      className="accent-indigo-500"
+                    />
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Target Company & Duration */}
+            <div className="space-y-5">
+              
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-300">Target Company</label>
+                <input
+                  type="text"
+                  value={companyInput}
+                  onChange={(e) => setCompanyInput(e.target.value)}
+                  placeholder="e.g. Google, Amazon, Stripe, McKinsey..."
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-indigo-500"
+                />
+                
+                {/* Company Chips */}
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {PRESET_COMPANIES.map(c => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => setCompanyInput(c)}
+                      className={`text-[10px] font-semibold px-2.5 py-1 rounded-md border cursor-pointer transition-colors ${
+                        companyInput === c ? 'bg-indigo-600 text-white border-indigo-500' : 'bg-slate-950 text-slate-400 border-slate-800'
+                      }`}
+                    >
+                      {c}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Duration Slider */}
+              <div className="space-y-2">
+                <div className="flex justify-between text-xs">
+                  <span className="font-bold text-slate-300">Interview Length</span>
+                  <span className="font-mono font-bold text-cyan-400">{durationInput} Minutes</span>
+                </div>
+                <input
+                  type="range"
+                  min="15"
+                  max="60"
+                  step="15"
+                  value={durationInput}
+                  onChange={(e) => setDurationInput(Number(e.target.value))}
+                  className="w-full accent-indigo-500 cursor-pointer"
+                />
+                <div className="flex justify-between text-[10px] text-slate-500">
+                  <span>15 min (Express)</span>
+                  <span>30 min (Standard)</span>
+                  <span>60 min (Full Bar Raiser)</span>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+
+          {/* Custom Notes */}
+          <div className="space-y-1.5 pt-2">
+            <label className="text-xs font-bold text-slate-300">Custom Focus Areas & Probing Instructions (Optional)</label>
+            <textarea
+              value={customNotes}
+              onChange={(e) => setCustomNotes(e.target.value)}
+              placeholder="e.g. Focus heavily on distributed locking algorithms and trade-off analysis..."
+              className="w-full h-20 bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500 resize-none"
+            />
+          </div>
+        </div>
+
+        {/* Step 3: Integrated Mic Calibration Component */}
+        <MicCheck />
+
+        {/* Final CTA */}
+        <div className="text-center pt-4">
+          <button
+            onClick={handleInitialize}
+            disabled={isLoadingQuestions}
+            className="w-full sm:w-auto px-10 py-4 rounded-2xl bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-700 hover:from-indigo-500 hover:to-blue-600 text-white font-extrabold text-sm shadow-2xl shadow-indigo-600/40 inline-flex items-center justify-center gap-3 transition-transform hover:scale-105 active:scale-95 cursor-pointer"
+          >
+            {isLoadingQuestions ? (
+              <>
+                <RefreshCw className="w-4 h-4 animate-spin" />
+                <span>Generating AI Questions & Loading Studio...</span>
+              </>
+            ) : (
+              <>
+                <Play className="w-4 h-4 fill-current text-white" />
+                <span>Initialize Simulation -&gt;</span>
+              </>
+            )}
+          </button>
+        </div>
+
+      </div>
+    </div>
+  );
+};

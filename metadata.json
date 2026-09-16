@@ -1,0 +1,6 @@
+{
+  "name": "InterviewAI",
+  "description": "AI-Powered Technical & Behavioral Interview Preparation Platform with live simulation, audio checks, transcript deep-dives, and feedback analytics.",
+  "requestFramePermissions": ["camera", "microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
