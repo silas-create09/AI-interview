@@ -75,9 +75,18 @@ export const ResumeReviewView: React.FC<ResumeReviewViewProps> = ({
         });
       }
 
+      const contentType = res.headers.get("content-type") || "";
       if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.error || `HTTP ${res.status}: Resume analysis failed`);
+        let errText = `HTTP ${res.status}: Resume analysis failed`;
+        if (contentType.includes("application/json")) {
+          const errData = await res.json().catch(() => ({}));
+          errText = errData.error || errText;
+        }
+        throw new Error(errText);
+      }
+
+      if (!contentType.includes("application/json")) {
+        throw new Error("Resume analysis service returned an unexpected non-JSON response.");
       }
 
       const data: ResumeAnalysisResult = await res.json();

@@ -92,9 +92,18 @@ export const SetupView: React.FC<SetupViewProps> = ({
         })
       });
 
+      const contentType = response.headers.get("content-type") || "";
       if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        throw new Error((data.error || `Server responded with status ${response.status}`) + (data.details ? ` — ${data.details}` : ""));
+        let errText = `Server responded with status ${response.status}`;
+        if (contentType.includes("application/json")) {
+          const data = await response.json().catch(() => ({}));
+          errText = (data.error || errText) + (data.details ? ` — ${data.details}` : "");
+        }
+        throw new Error(errText);
+      }
+
+      if (!contentType.includes("application/json")) {
+        throw new Error("Question generation service returned an unexpected non-JSON response.");
       }
 
       const data = await response.json();

@@ -131,9 +131,18 @@ export const SimulatorView: React.FC<SimulatorViewProps> = ({
           })
         });
 
+        const contentType = res.headers.get("content-type") || "";
         if (!res.ok) {
-          const errData = await res.json().catch(() => ({}));
-          throw new Error(errData.error || `HTTP ${res.status}`);
+          let errMsg = `HTTP ${res.status}`;
+          if (contentType.includes("application/json")) {
+            const errData = await res.json().catch(() => ({}));
+            errMsg = errData.error || errMsg;
+          }
+          throw new Error(errMsg);
+        }
+
+        if (!contentType.includes("application/json")) {
+          throw new Error("Evaluation service returned non-JSON response");
         }
 
         currentEval = await res.json();
@@ -197,8 +206,18 @@ export const SimulatorView: React.FC<SimulatorViewProps> = ({
           })
         });
 
+        const contentType = res.headers.get("content-type") || "";
         if (!res.ok) {
-          throw new Error(`HTTP ${res.status}`);
+          let errMsg = `HTTP ${res.status}`;
+          if (contentType.includes("application/json")) {
+            const errData = await res.json().catch(() => ({}));
+            errMsg = errData.error || errMsg;
+          }
+          throw new Error(errMsg);
+        }
+
+        if (!contentType.includes("application/json")) {
+          throw new Error("Evaluation service returned non-JSON response");
         }
 
         evalData = await res.json();

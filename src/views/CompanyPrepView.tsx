@@ -45,10 +45,20 @@ export const CompanyPrepView: React.FC<CompanyPrepViewProps> = ({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ companyName: customCompanyInput.trim(), role: "Software Engineer" })
       });
+      const contentType = res.headers.get("content-type") || "";
       if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.error || `HTTP ${res.status}: Company research failed`);
+        let errText = `HTTP ${res.status}: Company research failed`;
+        if (contentType.includes("application/json")) {
+          const errData = await res.json().catch(() => ({}));
+          errText = errData.error || errText;
+        }
+        throw new Error(errText);
       }
+
+      if (!contentType.includes("application/json")) {
+        throw new Error("Company research service returned an unexpected non-JSON response.");
+      }
+
       const data = await res.json();
       if (data.companyName) {
         setSelectedCompany({

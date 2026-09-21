@@ -13,10 +13,13 @@ const PORT = 3000;
 app.use(express.json({ limit: "10mb" }));
 
 // Model configuration
-const MODEL_QUESTIONS = process.env.GEMINI_MODEL_QUESTIONS || "gemini-3.8-flash";
+// Note: gemini-3.1-flash-lite is the resilient primary model to avoid free-tier quota (20 req/day)
+// exhaustion and 503 high demand spikes seen on gemini-3.8-flash, while supporting fast latency and high throughput.
+const MODEL_DEFAULT = "gemini-3.1-flash-lite";
+const MODEL_QUESTIONS = process.env.GEMINI_MODEL_QUESTIONS || MODEL_DEFAULT;
 const MODEL_FALLBACK = process.env.GEMINI_MODEL_FALLBACK || "gemini-3.1-flash-lite";
-const MODEL_EVAL = process.env.GEMINI_MODEL_EVAL || "gemini-3.8-flash";
-const MODEL_RESUME = process.env.GEMINI_MODEL_RESUME || "gemini-3.8-flash";
+const MODEL_EVAL = process.env.GEMINI_MODEL_EVAL || MODEL_DEFAULT;
+const MODEL_RESUME = process.env.GEMINI_MODEL_RESUME || MODEL_DEFAULT;
 
 // Initialize Gemini client safe check
 const getGeminiClient = () => {
@@ -33,6 +36,42 @@ const getGeminiClient = () => {
     },
   });
 };
+
+// Resilient Gemini generateContent call with automatic fallback on 429 quota exhaustion or 503 high demand
+async function generateContentWithFallback(
+  ai: GoogleGenAI,
+  primaryModel: string,
+  params: any,
+  fallbackModel: string = MODEL_FALLBACK
+) {
+  try {
+    return await ai.models.generateContent({
+      model: primaryModel,
+      ...params,
+    });
+  } catch (err: any) {
+    const isQuotaOrUnavailable =
+      err?.status === 429 ||
+      err?.status === 503 ||
+      String(err?.message || "").includes("429") ||
+      String(err?.message || "").includes("503") ||
+      String(err?.message || "").includes("quota") ||
+      String(err?.message || "").includes("RESOURCE_EXHAUSTED") ||
+      String(err?.message || "").includes("UNAVAILABLE") ||
+      String(err?.message || "").includes("high demand");
+
+    if (primaryModel !== fallbackModel && isQuotaOrUnavailable) {
+      console.warn(
+        `[generateContentWithFallback] ${primaryModel} failed (${err?.status || "error"}: ${err?.message?.slice(0, 120)}). Retrying with fallback model ${fallbackModel}...`
+      );
+      return await ai.models.generateContent({
+        model: fallbackModel,
+        ...params,
+      });
+    }
+    throw err;
+  }
+}
 
 // Retry helper: attempts call once, retries once on error
 async function withRetry<T>(fn: () => Promise<T>, attempts = 2): Promise<T> {
@@ -199,8 +238,7 @@ For each question provide:
       try {
         const temp = attempt === 1 ? 0.9 : 0.6;
         const selectedModel = attempt === 1 ? MODEL_QUESTIONS : (MODEL_FALLBACK || "gemini-3.1-flash-lite");
-        const response = await ai.models.generateContent({
-          model: selectedModel,
+        const response = await generateContentWithFallback(ai, selectedModel, {
           contents: prompt,
           config: {
             systemInstruction,
@@ -465,8 +503,7 @@ SCORING BANDS:
 90-100: Exceptional, staff-level mastery, proactive trade-off evaluation`;
 
     const evaluateCall = async () => {
-      const response = await ai.models.generateContent({
-        model: MODEL_EVAL,
+      const response = await generateContentWithFallback(ai, MODEL_EVAL, {
         contents: prompt,
         config: {
           systemInstruction:
@@ -678,8 +715,7 @@ CRITICAL AUDITING INSTRUCTIONS:
     contentParts.push(promptText);
 
     const analyzeCall = async () => {
-      const response = await ai.models.generateContent({
-        model: MODEL_RESUME,
+      const response = await generateContentWithFallback(ai, MODEL_RESUME, {
         contents: contentParts,
         config: {
           systemInstruction:
@@ -833,8 +869,7 @@ app.post("/api/company/research", async (req, res) => {
       const sources: { title: string; url: string }[] = [];
 
       try {
-        const searchResponse = await ai.models.generateContent({
-          model: MODEL_QUESTIONS,
+        const searchResponse = await generateContentWithFallback(ai, MODEL_QUESTIONS, {
           contents: `Research the company "${sanitizeXmlContent(
             companyName
           )}" specifically for someone interviewing for the role "${sanitizeXmlContent(
@@ -879,8 +914,7 @@ Return:
 - prepTip: 1 actionable bar-raiser preparation tip
 - verified: boolean indicating if this company is a real, verifiable business`;
 
-      const structResponse = await ai.models.generateContent({
-        model: MODEL_QUESTIONS,
+      const structResponse = await generateContentWithFallback(ai, MODEL_QUESTIONS, {
         contents: structPrompt,
         config: {
           responseMimeType: "application/json",
