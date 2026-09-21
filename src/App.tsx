@@ -51,11 +51,20 @@ export default function App() {
   const handleStartSimulation = (generatedQuestions: Question[]) => {
     if (generatedQuestions && generatedQuestions.length > 0) {
       setQuestions(generatedQuestions);
-    } else {
-      setQuestions(SAMPLE_QUESTIONS);
+      setHasActiveSession(true);
+      handleSelectTab('simulator');
     }
-    setHasActiveSession(true);
-    handleSelectTab('simulator');
+  };
+
+  // Handle starting simulation with custom resume-generated questions
+  const handleStartWithQuestions = (customQuestions: Question[], role: string, company: string) => {
+    if (role) setConfig(prev => ({ ...prev, role }));
+    if (company) setConfig(prev => ({ ...prev, company }));
+    if (customQuestions && customQuestions.length > 0) {
+      setQuestions(customQuestions);
+      setHasActiveSession(true);
+      handleSelectTab('simulator');
+    }
   };
 
   // Handle finishing interview
@@ -100,7 +109,8 @@ export default function App() {
             config={config} 
             questions={questions} 
             onFinishInterview={handleFinishInterview} 
-            onSelectTab={handleSelectTab} 
+            onSelectTab={handleSelectTab}
+            userName={currentUser?.name || "Candidate"}
           />
         )}
 
@@ -125,6 +135,7 @@ export default function App() {
               setConfig(prev => ({ ...prev, role, company: comp }));
               handleSelectTab('setup');
             }}
+            onStartWithQuestions={handleStartWithQuestions}
           />
         )}
 

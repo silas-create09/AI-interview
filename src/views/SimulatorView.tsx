@@ -28,31 +28,30 @@ interface SimulatorViewProps {
   questions: Question[];
   onFinishInterview: (report: InterviewReport) => void;
   onSelectTab: (tab: AppTab) => void;
+  userName?: string;
 }
 
 export const SimulatorView: React.FC<SimulatorViewProps> = ({ 
   config, 
   questions, 
   onFinishInterview,
-  onSelectTab
+  onSelectTab,
+  userName
 }) => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [isRecording, setIsRecording] = useState(false);
   const [isAISpeaking, setIsAISpeaking] = useState(false);
-  const [sessionSeconds, setSessionSeconds] = useState(892); // 00:14:52
-  const [candidateNotes, setCandidateNotes] = useState(
-    "STAR Notes:\n- Situation: Acme Health checkout overhaul (2025)\n- Task: Lower churn without hurting upsell revenue\n- Action: Video recordings to prove pop-up friction\n- Result: +12% conversion, 0% drop-off"
-  );
-  
-  const [candidateTranscript, setCandidateTranscript] = useState(
-    "In my previous role at Acme Health, we were building a multi-tenant dashboard. We had a 6-week hard deadline before our Q3 launch. I advocated for a modular component architecture while deferring custom micro-interactions to v1.1. This allowed engineers to reuse 80% of existing library elements, launching 3 days ahead of schedule and reducing team churn by 25%."
-  );
+  const [sessionSeconds, setSessionSeconds] = useState(0);
+  const [candidateNotes, setCandidateNotes] = useState("");
+  const [candidateTranscript, setCandidateTranscript] = useState("");
+  const questionStartTimeRef = useRef(Date.now());
+  const [evalError, setEvalError] = useState<string | null>(null);
 
   // Store user answers and evaluations per question
-  const [answersState, setAnswersState] = useState<Record<number, { text: string; timeSec: number; evaluation?: any }>>({});
+  const [answersState, setAnswersState] = useState<Record<number, { text: string; timeSec: number; evaluation?: any; evalFailed?: boolean }>>({});
   const [isEvaluating, setIsEvaluating] = useState(false);
-  const [speechPaceWpm, setSpeechPaceWpm] = useState(145);
-  const [sentimentClarity, setSentimentClarity] = useState(88);
+  const [speechPaceWpm, setSpeechPaceWpm] = useState(140);
+  const [sentimentClarity, setSentimentClarity] = useState(85);
 
   const currentQ = questions[currentQuestionIndex] || questions[0];
 
@@ -107,37 +106,56 @@ export const SimulatorView: React.FC<SimulatorViewProps> = ({
   // Next Question
   const handleNextQuestion = async () => {
     setIsEvaluating(true);
+    setEvalError(null);
     let currentEval = null;
+    let evalFailed = false;
+    const currentAnswerText = candidateTranscript.trim();
+    const timeElapsed = Math.max(1, Math.round((Date.now() - questionStartTimeRef.current) / 1000));
     
-    // Evaluate answer with backend API
-    try {
-      const res = await fetch("/api/interview/evaluate-response", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          question: currentQ.question,
-          candidateAnswer: candidateTranscript,
-          role: config.role,
-          company: config.company,
-          level: config.level,
-        })
-      });
-      currentEval = await res.json();
-    } catch (e) {
-      console.warn("Evaluation fetch failed, using internal assessment", e);
-    } finally {
-      setIsEvaluating(false);
+    // Evaluate answer with backend API if candidate provided text
+    if (currentAnswerText.length > 0) {
+      try {
+        const res = await fetch("/api/interview/evaluate-response", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            question: currentQ.question,
+            candidateAnswer: currentAnswerText,
+            category: currentQ.category,
+            expectedAnswerType: currentQ.expectedAnswerType || "conceptual",
+            idealAnswerPoints: currentQ.idealAnswerPoints || [],
+            role: config.role,
+            company: config.company,
+            level: config.level,
+            difficulty: config.difficulty || "Medium",
+          })
+        });
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error || `HTTP ${res.status}`);
+        }
+
+        currentEval = await res.json();
+      } catch (e: any) {
+        console.error("Evaluation fetch failed:", e);
+        evalFailed = true;
+        setEvalError(`Evaluation failed: ${e.message || "Service unavailable"}`);
+      }
     }
+    setIsEvaluating(false);
 
     const updatedAnswers = {
       ...answersState,
       [currentQ.id]: {
-        text: candidateTranscript,
-        timeSec: 140,
+        text: currentAnswerText,
+        timeSec: timeElapsed,
         evaluation: currentEval,
+        evalFailed,
       }
     };
     setAnswersState(updatedAnswers);
+    questionStartTimeRef.current = Date.now();
 
     if (currentQuestionIndex < questions.length - 1) {
       const nextIdx = currentQuestionIndex + 1;
@@ -154,54 +172,89 @@ export const SimulatorView: React.FC<SimulatorViewProps> = ({
   // Finish session
   const finishSessionAndGenerateReport = async (customAnswers?: Record<number, any>) => {
     setIsEvaluating(true);
-    let currentMap = customAnswers || answersState;
+    let currentMap = { ...(customAnswers || answersState) };
+    const currentAnswerText = candidateTranscript.trim();
+    const timeElapsed = Math.max(1, Math.round((Date.now() - questionStartTimeRef.current) / 1000));
 
-    // If current question not evaluated yet and has text
-    if (!currentMap[currentQ.id] || !currentMap[currentQ.id].evaluation) {
+    // If current question has text and was not evaluated yet
+    if (currentAnswerText.length > 0 && (!currentMap[currentQ.id] || !currentMap[currentQ.id].evaluation)) {
+      let evalData = null;
+      let evalFailed = false;
       try {
         const res = await fetch("/api/interview/evaluate-response", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             question: currentQ.question,
-            candidateAnswer: candidateTranscript,
+            candidateAnswer: currentAnswerText,
+            category: currentQ.category,
+            expectedAnswerType: currentQ.expectedAnswerType || "conceptual",
+            idealAnswerPoints: currentQ.idealAnswerPoints || [],
             role: config.role,
             company: config.company,
             level: config.level,
+            difficulty: config.difficulty || "Medium",
           })
         });
-        const evalData = await res.json();
-        currentMap = {
-          ...currentMap,
-          [currentQ.id]: {
-            text: candidateTranscript,
-            timeSec: 140,
-            evaluation: evalData,
-          }
-        };
-        setAnswersState(currentMap);
-      } catch (err) {
+
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+
+        evalData = await res.json();
+      } catch (err: any) {
         console.error("Error during final evaluation:", err);
+        evalFailed = true;
       }
+
+      currentMap[currentQ.id] = {
+        text: currentAnswerText,
+        timeSec: timeElapsed,
+        evaluation: evalData,
+        evalFailed,
+      };
+      setAnswersState(currentMap);
+    } else if (currentAnswerText.length === 0 && !currentMap[currentQ.id]) {
+      currentMap[currentQ.id] = {
+        text: "",
+        timeSec: 0,
+        evaluation: null,
+        evalFailed: false,
+      };
     }
     setIsEvaluating(false);
 
-    // Compute rigorous aggregate scores across all questions
+    // Compute true aggregate scores across actual answered questions
     const questionReports = questions.map((q, idx) => {
       const recorded = currentMap[q.id];
-      const answerText = recorded?.text || (idx === 0 ? candidateTranscript : "Demonstrated structured approach prioritizing core modular architectural trade-offs.");
+      const hasAnswer = recorded && recorded.text && recorded.text.trim().length > 0;
+      const answerText = hasAnswer 
+        ? recorded.text.trim() 
+        : (idx === currentQuestionIndex && currentAnswerText.length > 0 ? currentAnswerText : "(No response provided / Skipped)");
       const evaluation = recorded?.evaluation;
+      const evalFailed = !!recorded?.evalFailed;
 
-      const score = evaluation?.overallScore ?? (idx === 0 ? 88 : 82);
-      const dimensionalScores = evaluation?.dimensionalScores ?? {
-        relevance: evaluation?.clarityScore ?? 85,
-        starStructure: 82,
-        quantifiableImpact: 74,
-        technicalPrecision: evaluation?.technicalScore ?? 80,
-        seniorityCalibration: 82,
-      };
+      // Real scores for answered questions; 0 or skipped indicator for unattempted
+      const isAttempted = hasAnswer || (idx === currentQuestionIndex && currentAnswerText.length > 0);
+      const score = isAttempted && !evalFailed
+        ? (evaluation?.overallScore ?? 0)
+        : 0;
 
-      const aiNotes = evaluation?.rubricNotes || evaluation?.strengths?.[0] || "Structured answer with solid communication clarity.";
+      const dimensionalScores = isAttempted && !evalFailed && evaluation?.dimensionalScores
+        ? evaluation.dimensionalScores
+        : {
+            relevance: isAttempted && !evalFailed ? (evaluation?.clarityScore ?? 0) : 0,
+            starStructure: 0,
+            quantifiableImpact: 0,
+            technicalPrecision: isAttempted && !evalFailed ? (evaluation?.technicalScore ?? 0) : 0,
+            seniorityCalibration: 0,
+          };
+
+      const aiNotes = isAttempted
+        ? (evalFailed
+            ? "Evaluation service was temporarily unavailable for this response."
+            : (evaluation?.rubricNotes || evaluation?.strengths?.[0] || "Response recorded and evaluated."))
+        : "Question was skipped during this session.";
 
       // Extract highlights from answer
       const metricMatches = answerText.match(/\b\d+(\.\d+)?%|\$[0-9,]+|\b\d+\s*(ms|s|min|qps|rps|users|engineers|gb|tb|k|m|days|weeks)\b/gi) || [];
@@ -212,11 +265,16 @@ export const SimulatorView: React.FC<SimulatorViewProps> = ({
       if (metricMatches.length > 1) {
         highlights.push({ text: metricMatches[1], type: 'positive', label: 'Measured Outcome' });
       }
-      if (metricMatches.length === 0) {
-        highlights.push({ text: 'Missing quantifiable metrics', type: 'warning', label: 'Score Penalty' });
+      if (isAttempted && metricMatches.length === 0 && (q.category.includes("Behavior") || q.category.includes("Design"))) {
+        highlights.push({ text: 'Consider adding quantifiable scale or outcome', type: 'tip', label: 'Metric Tip' });
       }
       if (evaluation?.strengths?.[0]) {
         highlights.push({ text: evaluation.strengths[0].slice(0, 35) + '...', type: 'positive', label: 'Key Strength' });
+      }
+      if (evalFailed) {
+        highlights.push({ text: 'Evaluation failed - Retry', type: 'warning', label: 'Retry Needed' });
+      } else if (!isAttempted) {
+        highlights.push({ text: 'Unanswered question', type: 'warning', label: 'Skipped' });
       }
 
       return {
@@ -224,30 +282,51 @@ export const SimulatorView: React.FC<SimulatorViewProps> = ({
         questionText: q.question,
         category: q.category,
         candidateAnswer: answerText,
-        timeSec: recorded?.timeSec || 140,
+        timeSec: recorded?.timeSec || (isAttempted ? timeElapsed : 0),
         score,
         aiNotes,
         dimensionalScores,
         starAnalysis: evaluation?.starAnalysis,
         scoreBoosterRewrite: evaluation?.scoreBoosterRewrite,
         highlights: highlights.slice(0, 3),
+        evaluation,
+        evalFailed,
       };
     });
 
-    // Calculate true overall metrics
-    const totalScore = questionReports.reduce((sum, item) => sum + item.score, 0);
-    const overallScore = Math.round(totalScore / questionReports.length);
+    // Calculate true overall metrics based only on successfully evaluated attempted questions
+    const validEvaluated = questionReports.filter(q => q.score > 0 && !q.evalFailed);
+    const divisor = validEvaluated.length > 0 ? validEvaluated.length : 1;
+    const totalScore = validEvaluated.reduce((sum, item) => sum + item.score, 0);
+    const overallScore = validEvaluated.length > 0 ? Math.round(totalScore / divisor) : 0;
 
-    // Dimensional averages
-    const avgRelevance = Math.round(questionReports.reduce((s, r) => s + (r.dimensionalScores?.relevance || 80), 0) / questionReports.length);
-    const avgStar = Math.round(questionReports.reduce((s, r) => s + (r.dimensionalScores?.starStructure || 80), 0) / questionReports.length);
-    const avgImpact = Math.round(questionReports.reduce((s, r) => s + (r.dimensionalScores?.quantifiableImpact || 70), 0) / questionReports.length);
-    const avgTech = Math.round(questionReports.reduce((s, r) => s + (r.dimensionalScores?.technicalPrecision || 80), 0) / questionReports.length);
-    const avgSeniority = Math.round(questionReports.reduce((s, r) => s + (r.dimensionalScores?.seniorityCalibration || 80), 0) / questionReports.length);
+    // Dimensional averages for evaluated questions
+    const avgRelevance = validEvaluated.length > 0 
+      ? Math.round(validEvaluated.reduce((s, r) => s + (r.dimensionalScores?.relevance || 0), 0) / divisor)
+      : 0;
+    const avgStar = validEvaluated.length > 0
+      ? Math.round(validEvaluated.reduce((s, r) => s + (r.dimensionalScores?.starStructure || 0), 0) / divisor)
+      : 0;
+    const avgImpact = validEvaluated.length > 0
+      ? Math.round(validEvaluated.reduce((s, r) => s + (r.dimensionalScores?.quantifiableImpact || 0), 0) / divisor)
+      : 0;
+    const avgTech = validEvaluated.length > 0
+      ? Math.round(validEvaluated.reduce((s, r) => s + (r.dimensionalScores?.technicalPrecision || 0), 0) / divisor)
+      : 0;
+    const avgSeniority = validEvaluated.length > 0
+      ? Math.round(validEvaluated.reduce((s, r) => s + (r.dimensionalScores?.seniorityCalibration || 0), 0) / divisor)
+      : 0;
 
     const communication = Math.round((avgRelevance + avgStar) / 2);
     const technical = Math.round((avgTech * 0.7) + (avgImpact * 0.3));
-    const toneAndConfidence = Math.round(sentimentClarity);
+    
+    // Derive tone and confidence from real sentiment scores if available
+    const validSentiments = validEvaluated
+      .map(q => q.evaluation?.sentimentScore)
+      .filter((s): s is number => typeof s === 'number' && s > 0);
+    const toneAndConfidence = validSentiments.length > 0
+      ? Math.round(validSentiments.reduce((a, b) => a + b, 0) / validSentiments.length)
+      : (overallScore > 0 ? sentimentClarity : 0);
 
     // Derived Match Rating based on realistic FAANG thresholds
     let matchRating = "Developing (Below Senior Bar)";
@@ -311,7 +390,7 @@ export const SimulatorView: React.FC<SimulatorViewProps> = ({
 
     const finalReport: InterviewReport = {
       id: `rep_${Date.now()}`,
-      candidateName: "Alex Rivera",
+      candidateName: userName || "Candidate",
       date: "Just Now",
       role: config.role || "Senior Role",
       company: config.company || "Target Enterprise",
@@ -527,6 +606,22 @@ export const SimulatorView: React.FC<SimulatorViewProps> = ({
                 className="w-full h-28 bg-slate-950 border border-slate-800 rounded-2xl p-3.5 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500 transition-colors resize-none leading-relaxed"
               />
             </div>
+
+            {/* Evaluation Error Banner */}
+            {evalError && (
+              <div className="bg-red-950/60 border border-red-500/50 p-3 rounded-xl flex items-center justify-between text-xs text-red-200">
+                <span>{evalError}</span>
+                <button
+                  onClick={() => {
+                    setEvalError(null);
+                    handleNextQuestion();
+                  }}
+                  className="px-3 py-1 bg-red-600 hover:bg-red-500 text-white rounded-lg font-bold ml-2 cursor-pointer shrink-0"
+                >
+                  Retry Evaluation
+                </button>
+              </div>
+            )}
 
             {/* Big Mic & Action Controls */}
             <div className="flex items-center justify-between pt-4 border-t border-slate-800/80">

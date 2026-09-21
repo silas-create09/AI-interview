@@ -27,6 +27,7 @@ export const CompanyPrepView: React.FC<CompanyPrepViewProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [customCompanyInput, setCustomCompanyInput] = useState('');
   const [isLoadingCustom, setIsLoadingCustom] = useState(false);
+  const [researchError, setResearchError] = useState<string | null>(null);
 
   const filteredCompanies = TOP_COMPANIES.filter(c => 
     c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -36,13 +37,18 @@ export const CompanyPrepView: React.FC<CompanyPrepViewProps> = ({
   const handleResearchCustomCompany = async () => {
     if (!customCompanyInput.trim()) return;
     setIsLoadingCustom(true);
+    setResearchError(null);
 
     try {
       const res = await fetch("/api/company/research", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ companyName: customCompanyInput, role: "Software Engineer" })
+        body: JSON.stringify({ companyName: customCompanyInput.trim(), role: "Software Engineer" })
       });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || `HTTP ${res.status}: Company research failed`);
+      }
       const data = await res.json();
       if (data.companyName) {
         setSelectedCompany({
@@ -56,8 +62,9 @@ export const CompanyPrepView: React.FC<CompanyPrepViewProps> = ({
           prepTip: data.prepTip || "Focus on STAR framework structure."
         });
       }
-    } catch (e) {
-      console.warn("Custom company research failed", e);
+    } catch (e: any) {
+      console.error("Custom company research failed", e);
+      setResearchError(e.message || "Unable to research target company.");
     } finally {
       setIsLoadingCustom(false);
     }
@@ -117,11 +124,22 @@ export const CompanyPrepView: React.FC<CompanyPrepViewProps> = ({
                 <button
                   onClick={handleResearchCustomCompany}
                   disabled={isLoadingCustom}
-                  className="bg-amber-600 hover:bg-amber-500 text-white p-2 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                  className="bg-amber-600 hover:bg-amber-500 text-white p-2 rounded-xl text-xs font-bold transition-colors cursor-pointer shrink-0"
                 >
                   {isLoadingCustom ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
                 </button>
               </div>
+              {researchError && (
+                <div className="p-2 rounded-xl bg-red-950/60 border border-red-500/50 text-[11px] text-red-200 flex items-center justify-between gap-1.5">
+                  <span>{researchError}</span>
+                  <button
+                    onClick={handleResearchCustomCompany}
+                    className="underline text-red-300 hover:text-white font-bold cursor-pointer"
+                  >
+                    Retry
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Company Cards List */}

@@ -3,6 +3,7 @@ import { CompanyIntel, InterviewConfig, InterviewReport, Question } from '../typ
 export const DEFAULT_CONFIG: InterviewConfig = {
   role: 'Senior Product Designer',
   level: 'Senior / Lead',
+  difficulty: 'Medium',
   company: 'Global Tech Corp',
   durationMinutes: 30,
   customNotes: 'Focus on design system architecture, stakeholder alignment, and quantitative metric impact.'
@@ -15,7 +16,14 @@ export const SAMPLE_QUESTIONS: Question[] = [
     category: "System Design & Trade-offs",
     recommendedDurationSec: 180,
     starFocus: "Situation & Action",
-    keySkill: "Strategic Execution"
+    keySkill: "Strategic Execution",
+    difficulty: "Medium",
+    expectedAnswerType: "system-design",
+    idealAnswerPoints: [
+      "Explicit trade-offs between MVP release and architecture debt",
+      "Stakeholder alignment and phased rollout strategy",
+      "Quantifiable efficiency or debt reduction post-launch"
+    ]
   },
   {
     id: 2,
@@ -23,7 +31,14 @@ export const SAMPLE_QUESTIONS: Question[] = [
     category: "Stakeholder Alignment & Data",
     recommendedDurationSec: 150,
     starFocus: "Action & Result",
-    keySkill: "Influence & Communication"
+    keySkill: "Influence & Communication",
+    difficulty: "Medium",
+    expectedAnswerType: "behavioral",
+    idealAnswerPoints: [
+      "Specific contradiction between user research and leadership directive",
+      "Objective data/evidence used to advocate for the user",
+      "Compromise or outcome reached with positive business metrics"
+    ]
   },
   {
     id: 3,
@@ -31,7 +46,14 @@ export const SAMPLE_QUESTIONS: Question[] = [
     category: "Data-Driven Decisions",
     recommendedDurationSec: 210,
     starFocus: "Task & Result",
-    keySkill: "Analytics & Adaptability"
+    keySkill: "Analytics & Adaptability",
+    difficulty: "Medium",
+    expectedAnswerType: "conceptual",
+    idealAnswerPoints: [
+      "Defining North Star and guardrail counter-metrics upfront",
+      "Telemetry and funnel tracking methodology",
+      "Structured rollback or iteration framework on negative signals"
+    ]
   },
   {
     id: 4,
@@ -39,7 +61,14 @@ export const SAMPLE_QUESTIONS: Question[] = [
     category: "Ownership & Resilience",
     recommendedDurationSec: 180,
     starFocus: "Result & Learning",
-    keySkill: "Post-Mortem Accountability"
+    keySkill: "Post-Mortem Accountability",
+    difficulty: "Medium",
+    expectedAnswerType: "behavioral",
+    idealAnswerPoints: [
+      "Clear ownership of root cause without blaming others",
+      "Immediate mitigation and customer communication",
+      "Preventative guardrails and automated tests added"
+    ]
   }
 ];
 

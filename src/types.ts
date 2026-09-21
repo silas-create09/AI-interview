@@ -14,6 +14,9 @@ export interface Question {
   recommendedDurationSec: number;
   starFocus: string;
   keySkill: string;
+  difficulty?: 'Easy' | 'Medium' | 'Hard' | 'Expert';
+  expectedAnswerType?: 'conceptual' | 'behavioral' | 'system-design' | 'case';
+  idealAnswerPoints?: string[];
 }
 
 export interface DimensionalScores {
@@ -31,6 +34,10 @@ export interface AnswerEvaluation {
   clarityScore: number;
   technicalScore: number;
   sentimentScore: number;
+  verdict?: string;
+  incorrectClaims?: string[];
+  missedPoints?: string[];
+  evaluatorConfidence?: 'low' | 'medium' | 'high';
   dimensionalScores: DimensionalScores;
   strengths: string[];
   improvements: string[];
@@ -42,12 +49,14 @@ export interface AnswerEvaluation {
   };
   scoreBoosterRewrite?: string;
   suggestedFollowUp?: string;
+  rubricNotes?: string;
   timestamp: string;
 }
 
 export interface InterviewConfig {
   role: string;
   level: 'Junior / Entry' | 'Mid-Level' | 'Senior / Lead' | 'Executive / Director';
+  difficulty: 'Easy' | 'Medium' | 'Hard' | 'Expert';
   company: string;
   durationMinutes: number;
   customNotes?: string;
@@ -115,4 +124,40 @@ export interface CompanyIntel {
   keyValues: string[];
   commonQuestions: string[];
   prepTip: string;
+}
+
+export interface ResumeAnalysisResult {
+  isResume: boolean;
+  overallScore: number;
+  atsScore: number;
+  relevanceScore: number;
+  impactScore: number;
+  skillsScore: number;
+  structureScore: number;
+  verdict: string;
+  summary: string;
+  bulletCritiques: {
+    original: string;
+    critique: string;
+    improved: string;
+    metricBoost: string;
+  }[];
+  detectedKeywords: string[];
+  missingKeywords: string[];
+  redFlags: string[];
+  probeQuestions: {
+    question: string;
+    category: string;
+    rationale: string;
+  }[];
+}
+
+export interface CompanyResearchResult {
+  companyName: string;
+  overview: string;
+  keyValues: string[];
+  commonQuestions: string[];
+  prepTip: string;
+  verified: boolean;
+  sources: { title: string; url: string }[];
 }
