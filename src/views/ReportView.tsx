@@ -5,6 +5,7 @@ import {
   CheckCircle2, 
   TrendingUp, 
   AlertCircle, 
+  AlertTriangle,
   Download, 
   Share2, 
   Play, 
@@ -399,10 +400,21 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, onSelectTab }) =
                     </div>
 
                     <div className="flex items-center gap-4">
-                      <div className="text-right">
-                        <div className="text-xs font-mono font-bold text-emerald-400">{item.score} / 100 Score</div>
-                        <div className="text-[10px] text-slate-500">{Math.floor(item.timeSec / 60)}m {item.timeSec % 60}s duration</div>
-                      </div>
+                      {item.evaluation?.isUnscored ? (
+                        <div className="text-right">
+                          <div className="text-xs font-bold text-amber-400 bg-amber-950/80 px-2 py-0.5 rounded border border-amber-800">
+                            Unscored
+                          </div>
+                          <div className="text-[10px] text-amber-300/80 mt-0.5">
+                            {item.evaluation.wordCount !== undefined ? `${item.evaluation.wordCount}/60 words` : "< 60 words"}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-right">
+                          <div className="text-xs font-mono font-bold text-emerald-400">{item.score} / 100 Score</div>
+                          <div className="text-[10px] text-slate-500">{Math.floor(item.timeSec / 60)}m {item.timeSec % 60}s duration</div>
+                        </div>
+                      )}
                       {isExpanded ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
                     </div>
                   </div>
@@ -410,8 +422,26 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, onSelectTab }) =
                   {isExpanded && (
                     <div className="px-5 pb-5 pt-2 border-t border-slate-800/80 space-y-4 bg-slate-950/50">
                       
-                      {/* Question-Level Dimensional Scores */}
-                      {item.dimensionalScores && (
+                      {/* Unscored Explanation Banner */}
+                      {item.evaluation?.isUnscored && (
+                        <div className="bg-amber-950/40 border border-amber-500/40 rounded-xl p-3.5 flex items-start gap-2.5 text-xs text-amber-200">
+                          <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                          <div>
+                            <span className="font-bold text-amber-300 block">Answer Unscored</span>
+                            <p className="mt-0.5 text-amber-200/90 leading-relaxed">
+                              {item.evaluation.unscoredReason || "Responses under 60 words or lacking meaningful substance are left unscored. Minimum 60 words with clear technical accuracy required."}
+                            </p>
+                            {item.evaluation.wordCount !== undefined && (
+                              <span className="inline-block mt-1 font-mono text-[10px] text-amber-400/90 bg-amber-950 px-2 py-0.5 rounded border border-amber-800">
+                                Word count: {item.evaluation.wordCount} words (Minimum 60 words required)
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Question-Level Dimensional Scores (Only shown for scored answers) */}
+                      {!item.evaluation?.isUnscored && item.dimensionalScores && (
                         <div className="bg-slate-900 border border-slate-800 rounded-xl p-3.5 space-y-2.5">
                           <div className="flex items-center justify-between">
                             <span className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
@@ -514,6 +544,34 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, onSelectTab }) =
                         </span>
                         <p className="text-slate-300 leading-relaxed">{item.aiNotes}</p>
                       </div>
+
+                      {/* Factual Accuracy Checks */}
+                      {item.evaluation?.incorrectClaims && item.evaluation.incorrectClaims.length > 0 && (
+                        <div className="bg-rose-950/30 border border-rose-500/40 rounded-xl p-4 space-y-2 text-xs">
+                          <span className="font-bold text-rose-300 flex items-center gap-1.5 uppercase tracking-wider text-[11px]">
+                            <AlertTriangle className="w-4 h-4 text-rose-400" /> Factual Accuracy Issues Detected
+                          </span>
+                          <ul className="list-disc list-inside space-y-1 text-rose-200/90 leading-relaxed">
+                            {item.evaluation.incorrectClaims.map((claim, idx) => (
+                              <li key={idx}>{claim}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {/* Missed Core Concepts */}
+                      {item.evaluation?.missedPoints && item.evaluation.missedPoints.length > 0 && (
+                        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-2 text-xs">
+                          <span className="font-bold text-indigo-300 flex items-center gap-1.5 uppercase tracking-wider text-[11px]">
+                            <Target className="w-3.5 h-3.5 text-indigo-400" /> Key Technical Concepts Missed
+                          </span>
+                          <ul className="list-disc list-inside space-y-1 text-slate-300 leading-relaxed">
+                            {item.evaluation.missedPoints.map((pt, idx) => (
+                              <li key={idx}>{pt}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
 
                       {/* Score Booster Rewrite if available */}
                       {item.scoreBoosterRewrite && (

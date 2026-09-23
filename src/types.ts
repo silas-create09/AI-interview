@@ -34,6 +34,9 @@ export interface AnswerEvaluation {
   clarityScore: number;
   technicalScore: number;
   sentimentScore: number;
+  isUnscored?: boolean;
+  unscoredReason?: string;
+  wordCount?: number;
   verdict?: string;
   incorrectClaims?: string[];
   missedPoints?: string[];
@@ -126,6 +129,36 @@ export interface CompanyIntel {
   prepTip: string;
 }
 
+export interface ExtractedResumeData {
+  candidateName?: string;
+  contactInfo?: {
+    email?: string;
+    phone?: string;
+    location?: string;
+    links?: string[];
+  };
+  skills?: {
+    technicalSkills: string[];
+    softSkills: string[];
+    toolsAndFrameworks: string[];
+  };
+  experience?: {
+    company: string;
+    role: string;
+    duration?: string;
+    keyAchievements?: string[];
+    skillsUsed?: string[];
+  }[];
+  education?: {
+    institution: string;
+    degree: string;
+    fieldOfStudy?: string;
+    graduationYear?: string;
+    highlights?: string;
+  }[];
+  achievements?: string[];
+}
+
 export interface ResumeAnalysisResult {
   isResume: boolean;
   overallScore: number;
@@ -134,8 +167,11 @@ export interface ResumeAnalysisResult {
   impactScore: number;
   skillsScore: number;
   structureScore: number;
+  clarityScore?: number;
+  completenessScore?: number;
   verdict: string;
   summary: string;
+  extractedData?: ExtractedResumeData;
   bulletCritiques: {
     original: string;
     critique: string;

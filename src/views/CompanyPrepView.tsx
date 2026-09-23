@@ -98,7 +98,7 @@ export const CompanyPrepView: React.FC<CompanyPrepViewProps> = ({
             Targeted Company Interview Intelligence
           </h1>
           <p className="text-sm text-slate-400 max-w-xl mx-auto">
-            Deep-dive into culture values, bar raiser expectations, and top asked questions for Silicon Valley's top tech firms.
+            Deep-dive into culture values, bar raiser expectations, and top asked questions for leading Indian and global employers across IT, banking, FMCG, manufacturing, and startups.
           </p>
         </div>
 
@@ -115,7 +115,7 @@ export const CompanyPrepView: React.FC<CompanyPrepViewProps> = ({
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search Google, Amazon, Meta, Stripe..."
+                placeholder="Search TCS, Infosys, HDFC, HUL, Flipkart, Google..."
                 className="w-full bg-slate-900 border border-slate-800 rounded-2xl pl-10 pr-4 py-3 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
               />
             </div>

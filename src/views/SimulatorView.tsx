@@ -20,7 +20,8 @@ import {
   Volume2,
   RefreshCw,
   HelpCircle,
-  BarChart2
+  BarChart2,
+  AlertTriangle
 } from 'lucide-react';
 
 interface SimulatorViewProps {
@@ -314,7 +315,7 @@ export const SimulatorView: React.FC<SimulatorViewProps> = ({
     });
 
     // Calculate true overall metrics based only on successfully evaluated attempted questions
-    const validEvaluated = questionReports.filter(q => q.score > 0 && !q.evalFailed);
+    const validEvaluated = questionReports.filter(q => q.score > 0 && !q.evalFailed && !q.evaluation?.isUnscored);
     const divisor = validEvaluated.length > 0 ? validEvaluated.length : 1;
     const totalScore = validEvaluated.reduce((sum, item) => sum + item.score, 0);
     const overallScore = validEvaluated.length > 0 ? Math.round(totalScore / divisor) : 0;
@@ -349,7 +350,9 @@ export const SimulatorView: React.FC<SimulatorViewProps> = ({
 
     // Derived Match Rating based on realistic FAANG thresholds
     let matchRating = "Developing (Below Senior Bar)";
-    if (overallScore >= 90) {
+    if (validEvaluated.length === 0) {
+      matchRating = "Unscored (Responses under 60 words or incomplete)";
+    } else if (overallScore >= 90) {
       matchRating = "Strong Hire (Top 5% Candidate - Exceeds Bar)";
     } else if (overallScore >= 80) {
       matchRating = `Hire (Meets & Exceeds Bar for ${config.level || "Senior"})`;
@@ -611,19 +614,49 @@ export const SimulatorView: React.FC<SimulatorViewProps> = ({
                 <span className="flex items-center gap-1.5">
                   <FileText className="w-3.5 h-3.5 text-cyan-400" /> Live Transcribed Response
                 </span>
-                {isRecording && (
-                  <span className="text-rose-400 text-[10px] font-bold animate-pulse">
-                    ● Recording Voice
-                  </span>
-                )}
+                <div className="flex items-center gap-2">
+                  {isRecording && (
+                    <span className="text-rose-400 text-[10px] font-bold animate-pulse">
+                      ● Recording Voice
+                    </span>
+                  )}
+                  {(() => {
+                    const currentWords = candidateTranscript.trim() ? candidateTranscript.trim().split(/\s+/).filter(Boolean).length : 0;
+                    return (
+                      <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full flex items-center gap-1 border ${
+                        currentWords >= 60
+                          ? 'bg-emerald-950/80 text-emerald-400 border-emerald-800'
+                          : currentWords > 0
+                            ? 'bg-amber-950/70 text-amber-300 border-amber-800'
+                            : 'bg-slate-950 text-slate-500 border-slate-800'
+                      }`}>
+                        {currentWords >= 60 ? (
+                          <>
+                            <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                            <span>{currentWords} words (Eligible for Score)</span>
+                          </>
+                        ) : (
+                          <>
+                            <AlertTriangle className="w-3 h-3 text-amber-400" />
+                            <span>{currentWords}/60 words min</span>
+                          </>
+                        )}
+                      </span>
+                    );
+                  })()}
+                </div>
               </div>
 
               <textarea
                 value={candidateTranscript}
                 onChange={(e) => setCandidateTranscript(e.target.value)}
-                placeholder="Click the microphone below to start speaking your response, or type directly here..."
+                placeholder="Click the microphone below to start speaking your response, or type directly here (minimum 60 words required for evaluation score)..."
                 className="w-full h-28 bg-slate-950 border border-slate-800 rounded-2xl p-3.5 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500 transition-colors resize-none leading-relaxed"
               />
+
+              <div className="flex items-center justify-between text-[11px] text-slate-500 px-1">
+                <span>Rule: Only accurate answers of at least 60 words receive a score. Incomplete/vague answers are unscored.</span>
+              </div>
             </div>
 
             {/* Evaluation Error Banner */}

@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { AppTab, InterviewConfig, Question } from '../types';
 import { MicCheck } from '../components/MicCheck';
+import { TARGET_COMPANY_DIRECTORY, TARGET_ROLE_DIRECTORY, TargetRoleOption } from '../data/careerDirectory';
 import { 
   Settings, 
   Search, 
@@ -16,7 +17,9 @@ import {
   Sliders,
   AlertTriangle,
   RotateCcw,
-  Zap
+  Zap,
+  Globe,
+  GraduationCap
 } from 'lucide-react';
 
 interface SetupViewProps {
@@ -26,16 +29,20 @@ interface SetupViewProps {
   onSelectTab: (tab: AppTab) => void;
 }
 
-const PRESET_ROLES = [
-  { title: "Software Engineer", dept: "Engineering", icon: "💻" },
-  { title: "Senior Product Designer", dept: "Design", icon: "🎨" },
-  { title: "Product Manager", dept: "Product", icon: "🎯" },
-  { title: "Data Scientist & AI Lead", dept: "Data & ML", icon: "📊" },
-  { title: "Solutions Architect", dept: "Cloud Infra", icon: "☁️" },
-  { title: "Engineering Manager", dept: "Management", icon: "👥" },
+const POPULAR_COMPANIES_SHORTCUTS = [
+  "Tata Consultancy Services (TCS)",
+  "Infosys",
+  "Wipro",
+  "HDFC Bank",
+  "Hindustan Unilever (HUL)",
+  "Tata Motors",
+  "Flipkart",
+  "Swiggy",
+  "Google",
+  "Amazon",
+  "JPMorgan Chase & Co.",
+  "McKinsey & Company"
 ];
-
-const PRESET_COMPANIES = ["Global Tech Corp", "Google", "Amazon", "Meta", "Stripe", "Apple", "McKinsey"];
 
 export const SetupView: React.FC<SetupViewProps> = ({ 
   config, 
@@ -51,6 +58,47 @@ export const SetupView: React.FC<SetupViewProps> = ({
   const [customNotes, setCustomNotes] = useState(config.customNotes || "");
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Directory filters
+  const [selectedRoleDept, setSelectedRoleDept] = useState<string>('All');
+  const [onlyFresherRoles, setOnlyFresherRoles] = useState<boolean>(false);
+  const [selectedCompanyIndustry, setSelectedCompanyIndustry] = useState<string>('All');
+
+  const filteredRoles = useMemo(() => {
+    return TARGET_ROLE_DIRECTORY.filter(r => {
+      const matchDept = selectedRoleDept === 'All' || r.department === selectedRoleDept;
+      const matchFresher = !onlyFresherRoles || r.isFresherFriendly;
+      return matchDept && matchFresher;
+    });
+  }, [selectedRoleDept, onlyFresherRoles]);
+
+  const filteredCompanies = useMemo(() => {
+    if (selectedCompanyIndustry === 'All') return TARGET_COMPANY_DIRECTORY;
+    return TARGET_COMPANY_DIRECTORY.filter(c => c.industry === selectedCompanyIndustry);
+  }, [selectedCompanyIndustry]);
+
+  const roleDepartments = [
+    'All',
+    'Data & Analytics',
+    'Marketing',
+    'Finance & Accounting',
+    'Human Resources',
+    'Information Technology',
+    'Sales & BD',
+    'Customer Support',
+    'Content & Creative',
+    'Operations & Admin'
+  ];
+
+  const companyIndustries = [
+    'All',
+    'IT & Tech',
+    'Finance & Banking',
+    'FMCG & Retail',
+    'Manufacturing & Auto',
+    'Startups & Unicorns',
+    'Consulting & Analytics'
+  ];
 
   const handleRoleSelect = (title: string) => {
     setRoleInput(title);
@@ -147,50 +195,112 @@ export const SetupView: React.FC<SetupViewProps> = ({
 
         {/* Step 1: Role Selection Grid */}
         <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 space-y-6 shadow-xl">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-800 pb-4 gap-2">
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center font-bold text-white text-xs">
                 1
               </div>
-              <h3 className="font-bold text-white text-base">Select Target Role</h3>
+              <div>
+                <h3 className="font-bold text-white text-base">Select Target Role</h3>
+                <p className="text-[11px] text-slate-400">Target entry-level, fresher, or specialized domain roles across India & globally</p>
+              </div>
             </div>
-            <span className="text-xs text-slate-400">Choose preset or type custom</span>
+
+            {/* Fresher Filter Toggle */}
+            <button
+              type="button"
+              onClick={() => setOnlyFresherRoles(!onlyFresherRoles)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold transition-all cursor-pointer ${
+                onlyFresherRoles 
+                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-sm shadow-emerald-500/10' 
+                  : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-slate-300'
+              }`}
+            >
+              <GraduationCap className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Fresher-Friendly Only</span>
+              {onlyFresherRoles && <span className="ml-1 px-1.5 py-0.2 bg-emerald-500 text-slate-950 rounded-full text-[9px] font-bold">Active</span>}
+            </button>
           </div>
 
-          {/* Search/Custom Role Input */}
+          {/* Search/Custom Role Input with Datalist */}
           <div className="relative">
             <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
             <input
               type="text"
+              list="setup-roles-datalist"
               value={roleInput}
               onChange={(e) => setRoleInput(e.target.value)}
-              placeholder="e.g. Principal Backend Engineer, Senior Product Designer..."
+              placeholder="e.g. Data Analyst, Digital Marketing Executive, Financial Analyst, Software Developer..."
               className="w-full bg-slate-950 border border-slate-800 rounded-2xl pl-10 pr-4 py-3 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
             />
+            <datalist id="setup-roles-datalist">
+              {TARGET_ROLE_DIRECTORY.map(r => (
+                <option key={r.title} value={r.title}>{`${r.department} • ${r.isFresherFriendly ? 'Fresher-Friendly' : 'Standard'}`}</option>
+              ))}
+            </datalist>
+          </div>
+
+          {/* Department Filter Pills */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-thin">
+            {roleDepartments.map(dept => (
+              <button
+                key={dept}
+                type="button"
+                onClick={() => setSelectedRoleDept(dept)}
+                className={`text-[11px] whitespace-nowrap px-3 py-1 rounded-lg border font-medium transition-colors cursor-pointer ${
+                  selectedRoleDept === dept
+                    ? 'bg-indigo-600 text-white border-indigo-500 shadow-sm'
+                    : 'bg-slate-950 text-slate-400 border-slate-800/80 hover:text-slate-200 hover:border-slate-700'
+                }`}
+              >
+                {dept}
+              </button>
+            ))}
           </div>
 
           {/* Role Cards Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {PRESET_ROLES.map((r) => {
-              const isSelected = roleInput === r.title;
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-h-[380px] overflow-y-auto pr-1">
+            {filteredRoles.map((r) => {
+              const isSelected = roleInput.toLowerCase() === r.title.toLowerCase();
               return (
                 <div
                   key={r.title}
                   onClick={() => handleRoleSelect(r.title)}
-                  className={`p-4 rounded-2xl border cursor-pointer transition-all flex items-center justify-between ${
+                  className={`p-3.5 rounded-2xl border cursor-pointer transition-all flex flex-col justify-between gap-2.5 ${
                     isSelected 
-                      ? 'bg-indigo-950/80 border-indigo-500 shadow-lg shadow-indigo-500/20' 
+                      ? 'bg-indigo-950/80 border-indigo-500 shadow-lg shadow-indigo-500/20 ring-1 ring-indigo-500' 
                       : 'bg-slate-950 border-slate-800/80 hover:border-slate-700'
                   }`}
                 >
-                  <div className="flex items-center gap-3">
-                    <span className="text-xl">{r.icon}</span>
-                    <div>
-                      <div className="text-xs font-bold text-white">{r.title}</div>
-                      <div className="text-[10px] text-slate-400">{r.dept}</div>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-start gap-2.5">
+                      <span className="text-xl shrink-0 p-1 rounded-lg bg-slate-900 border border-slate-800">{r.icon}</span>
+                      <div>
+                        <div className="text-xs font-bold text-white leading-tight">{r.title}</div>
+                        <div className="text-[10px] text-slate-400 mt-0.5">{r.department}</div>
+                      </div>
                     </div>
+                    {isSelected && <CheckCircle2 className="w-4 h-4 text-indigo-400 shrink-0" />}
                   </div>
-                  {isSelected && <CheckCircle2 className="w-4 h-4 text-indigo-400" />}
+
+                  <p className="text-[10px] text-slate-400 line-clamp-2 leading-relaxed">
+                    {r.description}
+                  </p>
+
+                  <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-900">
+                    <div className="flex flex-wrap gap-1">
+                      {r.typicalSkills.slice(0, 2).map((sk) => (
+                        <span key={sk} className="text-[9px] bg-slate-900 text-slate-400 px-1.5 py-0.5 rounded border border-slate-800">
+                          {sk}
+                        </span>
+                      ))}
+                    </div>
+                    {r.isFresherFriendly && (
+                      <span className="text-[9px] font-bold text-emerald-400 bg-emerald-950/70 border border-emerald-800/50 px-1.5 py-0.5 rounded shrink-0">
+                        Fresher
+                      </span>
+                    )}
+                  </div>
                 </div>
               );
             })}
@@ -279,27 +389,59 @@ export const SetupView: React.FC<SetupViewProps> = ({
             
             {/* Target Company */}
             <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-300">Target Company</label>
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-slate-300">Target Company</label>
+                <span className="text-[10px] text-indigo-400 font-semibold flex items-center gap-1">
+                  <Building2 className="w-3 h-3" /> India & Global Employers
+                </span>
+              </div>
               <input
                 type="text"
+                list="setup-company-datalist"
                 value={companyInput}
                 onChange={(e) => setCompanyInput(e.target.value)}
-                placeholder="e.g. Google, Amazon, Stripe, McKinsey..."
+                placeholder="e.g. TCS, Infosys, HDFC Bank, HUL, Tata Motors, Flipkart, Google..."
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-indigo-500"
               />
-              
-              {/* Company Chips */}
-              <div className="flex flex-wrap gap-1.5 pt-1">
-                {PRESET_COMPANIES.map(c => (
+              <datalist id="setup-company-datalist">
+                {TARGET_COMPANY_DIRECTORY.map(c => (
+                  <option key={c.name} value={c.name}>{`${c.industry} (${c.region}) — ${c.category}`}</option>
+                ))}
+              </datalist>
+
+              {/* Industry Filter for Quick Chips */}
+              <div className="flex items-center gap-1 overflow-x-auto pt-1 pb-0.5 scrollbar-thin">
+                {companyIndustries.map(ind => (
                   <button
-                    key={c}
+                    key={ind}
                     type="button"
-                    onClick={() => setCompanyInput(c)}
-                    className={`text-[10px] font-semibold px-2.5 py-1 rounded-md border cursor-pointer transition-colors ${
-                      companyInput === c ? 'bg-indigo-600 text-white border-indigo-500' : 'bg-slate-950 text-slate-400 border-slate-800'
+                    onClick={() => setSelectedCompanyIndustry(ind)}
+                    className={`text-[9px] whitespace-nowrap px-2 py-0.5 rounded border transition-colors cursor-pointer ${
+                      selectedCompanyIndustry === ind 
+                        ? 'bg-indigo-600 text-white border-indigo-500' 
+                        : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-slate-300'
                     }`}
                   >
-                    {c}
+                    {ind}
+                  </button>
+                ))}
+              </div>
+              
+              {/* Company Chips from Directory */}
+              <div className="flex flex-wrap gap-1.5 pt-1 max-h-24 overflow-y-auto pr-1">
+                {filteredCompanies.slice(0, 14).map(c => (
+                  <button
+                    key={c.name}
+                    type="button"
+                    onClick={() => setCompanyInput(c.name)}
+                    className={`text-[10px] font-semibold px-2.5 py-1 rounded-md border cursor-pointer transition-colors ${
+                      companyInput === c.name 
+                        ? 'bg-indigo-600 text-white border-indigo-500' 
+                        : 'bg-slate-950 text-slate-300 border-slate-800 hover:border-slate-700 hover:text-white'
+                    }`}
+                    title={c.description}
+                  >
+                    {c.name}
                   </button>
                 ))}
               </div>

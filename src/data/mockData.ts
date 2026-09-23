@@ -209,12 +209,163 @@ export const SAMPLE_REPORT: InterviewReport = {
 };
 
 export const TOP_COMPANIES: CompanyIntel[] = [
+  // --- Indian IT Services Leaders ---
+  {
+    name: "Tata Consultancy Services (TCS)",
+    logo: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=120&q=80",
+    tagline: "Building on belief.",
+    category: "IT Services & Consulting",
+    overview: "TCS is India's largest IT company and a top campus employer. Fresher and junior assessments evaluate coding fundamentals (TCS NQT), database queries, quantitative aptitude, and business communication.",
+    keyValues: ["Leading Change", "Integrity", "Respect for the Individual", "Excellence", "Learning and Sharing"],
+    commonQuestions: [
+      "Explain the key differences between SQL join types with examples.",
+      "How do you handle project deadline pressures while ensuring code correctness?",
+      "Walk me through an academic or internship project and your specific contribution."
+    ],
+    prepTip: "Focus on clear fundamentals in Java/Python, database normalization, and structured answers regarding team collaboration."
+  },
+  {
+    name: "Infosys",
+    logo: "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=120&q=80",
+    tagline: "Navigate your next.",
+    category: "IT Services & Digital Solutions",
+    overview: "Famous for its Mysore global education center, Infosys tests candidates on core algorithmic thinking, object-oriented concepts, and continuous learning adaptability.",
+    keyValues: ["Client Value", "Leadership by Example", "Integrity and Transparency", "Fairness", "Excellence"],
+    commonQuestions: [
+      "What is the difference between abstraction and encapsulation in Object-Oriented Programming?",
+      "Describe a challenging bug you encountered in a project and how you diagnosed it.",
+      "How do you quickly learn a completely new technology stack or framework on the job?"
+    ],
+    prepTip: "Demonstrate strong foundations in OOPs, basic data structures, and enthusiasm for structured training programs."
+  },
+  {
+    name: "Wipro",
+    logo: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=120&q=80",
+    tagline: "Ambition realized.",
+    category: "IT Services & Cloud Solutions",
+    overview: "Wipro recruits extensively across engineering and data disciplines. Focus areas include problem-solving, cloud computing foundations, and client-centric problem resolution.",
+    keyValues: ["Be Passionate About Clients' Success", "Treat Each Person With Respect", "Be Global and Responsible", "Unyielding Integrity"],
+    commonQuestions: [
+      "Explain the lifecycle of an HTTP request from browser entry to server response.",
+      "How do you prioritize multiple bug tickets or client requests when deadlines overlap?",
+      "Give an example of how you worked with a cross-functional peer to resolve an issue."
+    ],
+    prepTip: "Highlight practical project work, basic networking/OS concepts, and clear interpersonal communication."
+  },
+
+  // --- Indian & Global Banking & Finance ---
+  {
+    name: "HDFC Bank",
+    logo: "https://images.unsplash.com/photo-1541354329998-f4d9a9f9297f?auto=format&fit=crop&w=120&q=80",
+    tagline: "We understand your world.",
+    category: "Banking & Financial Services",
+    overview: "India's largest private sector bank tests candidates on analytical aptitude, financial compliance, customer empathy, and retail/digital banking workflows.",
+    keyValues: ["Customer Focus", "Operational Excellence", "Product Leadership", "People", "Sustainability"],
+    commonQuestions: [
+      "How do you evaluate creditworthiness and debt service ratios for retail loan applicants?",
+      "Describe a scenario where a customer was dissatisfied and how you de-escalated the situation.",
+      "Explain how digital banking platforms and UPI have transformed branch banking operations."
+    ],
+    prepTip: "Understand basic banking terminology, CASA ratios, KYC norms, and emphasize customer-first communication."
+  },
+  {
+    name: "JPMorgan Chase & Co.",
+    logo: "https://images.unsplash.com/photo-1559526324-4b87b5e36e44?auto=format&fit=crop&w=120&q=80",
+    tagline: "The right relationship is everything.",
+    category: "Investment Banking & Global Tech",
+    overview: "JPMorgan assesses candidates on analytical rigor, transaction safety, high-throughput systems, and uncompromising ethical integrity.",
+    keyValues: ["Exceptional Client Service", "Operational Excellence", "Integrity and Fairness", "Great Team and Culture"],
+    commonQuestions: [
+      "How do you ensure data consistency and idempotency in financial ledger systems?",
+      "Tell me about a time you noticed an error in a financial report or dataset before it was finalized.",
+      "Explain the trade-offs between relational ACID databases and NoSQL stores in banking."
+    ],
+    prepTip: "Emphasize high precision, auditability, data integrity, and structured problem breakdown."
+  },
+
+  // --- FMCG & Retail Leaders ---
+  {
+    name: "Hindustan Unilever (HUL)",
+    logo: "https://images.unsplash.com/photo-1526947425960-945c6e72858f?auto=format&fit=crop&w=120&q=80",
+    tagline: "Everyday essentials for a better future.",
+    category: "Fast Moving Consumer Goods (FMCG)",
+    overview: "The premier FMCG employer in India. HUL evaluates candidates on consumer empathy, commercial acumen, distributor channel operations, and data-driven brand growth.",
+    keyValues: ["Integrity", "Responsibility", "Respect", "Pioneering Spirit"],
+    commonQuestions: [
+      "How would you improve the retail market penetration of a packaged food brand in tier-2 cities?",
+      "Describe how you manage distributor inventory disputes under aggressive month-end targets.",
+      "How do you use consumer purchase telemetry to optimize promotional campaign spending?"
+    ],
+    prepTip: "Ground answers in on-the-ground market dynamics, supply chain efficiency, and quantifiable sales ROI."
+  },
+
+  // --- Manufacturing & Automotive ---
+  {
+    name: "Tata Motors",
+    logo: "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&w=120&q=80",
+    tagline: "Connecting Aspirations.",
+    category: "Automotive & Electric Mobility",
+    overview: "Pioneer in passenger EVs and commercial mobility. Evaluates candidates on manufacturing operations, quality assurance (Six Sigma/Kaizen), and hardware-software integration.",
+    keyValues: ["Customer Centricity", "Operational Rigor", "Innovation & Agility", "Integrity"],
+    commonQuestions: [
+      "Explain the fundamental principles of lean manufacturing and root-cause analysis (5-Whys).",
+      "How do you balance vehicle safety compliance with strict component manufacturing cost targets?",
+      "Describe a situation where a supplier failed delivery and how you mitigated line stoppage."
+    ],
+    prepTip: "Highlight engineering safety discipline, cross-functional vendor management, and process optimization."
+  },
+  {
+    name: "Larsen & Toubro (L&T)",
+    logo: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=120&q=80",
+    tagline: "It's all about imagineering.",
+    category: "Engineering, EPC & Infrastructure",
+    overview: "India's premier engineering conglomerate. Focuses on project scheduling, safety protocols, contract compliance, and resource allocation under challenging environments.",
+    keyValues: ["Pursuit of Excellence", "Professional Ethics", "Customer Satisfaction", "Team Spirit"],
+    commonQuestions: [
+      "How do you track project milestones and mitigate schedule slippages on large engineering deliverables?",
+      "Explain the importance of safety compliance protocols on industrial project sites.",
+      "How do you negotiate scope changes with subcontractors without inflating project budgets?"
+    ],
+    prepTip: "Focus on milestone accountability, cost-engineering, and risk mitigation strategies."
+  },
+
+  // --- High-Growth Startups & Unicorns ---
+  {
+    name: "Flipkart",
+    logo: "https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?auto=format&fit=crop&w=120&q=80",
+    tagline: "India's homegrown e-commerce marketplace.",
+    category: "E-Commerce & Supply Chain Logistics",
+    overview: "Flipkart's interviews evaluate candidates on fast problem solving, scalability during Big Billion Days surges, customer obsession, and data-backed experimentation.",
+    keyValues: ["Audacity", "Bias for Action", "Customer First", "Integrity"],
+    commonQuestions: [
+      "How would you optimize inventory placement across fulfillment hubs to reduce delivery times?",
+      "Tell me about a time you analyzed user funnel metrics to identify where drop-offs occurred.",
+      "How do you manage high-traffic concurrency bottlenecks during festival flash sales?"
+    ],
+    prepTip: "Show urgency, willingness to take calculated risks, and deep familiarity with e-commerce funnel metrics."
+  },
+  {
+    name: "Swiggy",
+    logo: "https://images.unsplash.com/photo-1526367790999-0150786686a2?auto=format&fit=crop&w=120&q=80",
+    tagline: "Delivering happiness at the door.",
+    category: "Hyperlocal Delivery & Quick Commerce",
+    overview: "Swiggy tests candidates on real-time logistical problem solving, geospatial dispatch challenges, unit economics, and customer-first speed of resolution.",
+    keyValues: ["Consumer Comes First", "Always Be Curious, Always Be Learning", "Be Humble", "Do More With Less"],
+    commonQuestions: [
+      "How would you evaluate rider dispatch efficiency under sudden monsoon weather surges?",
+      "Describe an instance where you identified an operational leak and fixed it with data analysis.",
+      "How do you balance quick-commerce delivery speed (Instamart) with rider safety?"
+    ],
+    prepTip: "Focus on unit economics, real-time analytics, and practical user empathy in on-demand services."
+  },
+
+  // --- Big Tech & Global Product Giants ---
   {
     name: "Google",
     logo: "https://images.unsplash.com/photo-1573804633927-bfcbcd909acd?auto=format&fit=crop&w=120&q=80",
     tagline: "Organize the world's information and make it universally accessible.",
     category: "Big Tech / Search & AI",
-    overview: "Google interviews assess 'Googleyness' (intellectual humility, collaboration, navigate ambiguity) alongside deep algorithmic rigor and massive system scale capabilities.",
+    overview: "Google interviews assess 'Googleyness' (intellectual humility, collaboration, navigating ambiguity) alongside deep algorithmic rigor and massive system scale capabilities.",
     keyValues: ["Focus on the User", "Fast is Better Than Slow", "Democracy on the Web", "Great Just Isn't Good Enough"],
     commonQuestions: [
       "Design a scalable real-time indexing pipeline for 10B web documents.",
