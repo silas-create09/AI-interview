@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { AppTab, Question, ResumeAnalysisResult } from '../types';
 import { TARGET_COMPANY_DIRECTORY, TARGET_ROLE_DIRECTORY } from '../data/careerDirectory';
+import { FIXED_QUESTIONS_PER_INTERVIEW } from '../data/scoringConfig';
 import { 
   FileText, 
   UploadCloud, 
@@ -167,7 +168,8 @@ export const ResumeReviewView: React.FC<ResumeReviewViewProps> = ({
 
   const handleLaunchMockFromResume = () => {
     if (analysisResult?.probeQuestions && analysisResult.probeQuestions.length > 0) {
-      const formattedQuestions: Question[] = analysisResult.probeQuestions.map((pq, idx) => ({
+      // Exactly 5 questions per interview for fixed 500 marks pool
+      const formattedQuestions: Question[] = analysisResult.probeQuestions.slice(0, FIXED_QUESTIONS_PER_INTERVIEW).map((pq, idx) => ({
         id: 2000 + idx,
         question: pq.question,
         category: pq.category || "Resume Deep Dive",

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { AppTab, InterviewReport } from '../types';
+import { AppTab, InterviewReport, QuestionStatus } from '../types';
+import { getVerdictFromPercentage, SCORE_BANDS, TOTAL_MARKS_POOL, MARKS_PER_QUESTION } from '../data/scoringConfig';
 import { 
   Award, 
   CheckCircle2, 
@@ -24,7 +25,9 @@ import {
   Scale,
   Zap,
   ShieldCheck,
-  Lightbulb
+  Lightbulb,
+  XCircle,
+  HelpCircle
 } from 'lucide-react';
 
 interface ReportViewProps {
@@ -44,6 +47,23 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, onSelectTab }) =
   const handleDownloadPDF = () => {
     window.print();
   };
+
+  // 5. OVERALL SCORE CALCULATION
+  const totalPossibleMarks = report.totalPossibleMarks || (report.transcripts.length * MARKS_PER_QUESTION) || TOTAL_MARKS_POOL;
+  const marksObtained = report.marksObtained !== undefined 
+    ? report.marksObtained 
+    : report.transcripts.reduce((sum, item) => sum + (item.score || 0), 0);
+  const overallPercentage = report.overallPercentage !== undefined
+    ? report.overallPercentage
+    : (totalPossibleMarks > 0 ? Number(((marksObtained / totalPossibleMarks) * 100).toFixed(2)) : 0);
+
+  // 6. VERDICT LABEL
+  const { label: verdictLabel, band: verdictBand } = getVerdictFromPercentage(overallPercentage);
+
+  // Per-question status counts
+  const answeredCount = report.transcripts.filter(t => t.status === 'answered').length;
+  const skippedCount = report.transcripts.filter(t => t.status === 'skipped').length;
+  const invalidCount = report.transcripts.filter(t => t.status === 'invalid').length;
 
   const dimScores = report.dimensionalScores || {
     relevance: 90,
@@ -94,49 +114,96 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, onSelectTab }) =
         <div className="bg-gradient-to-tr from-slate-900 via-slate-900/90 to-indigo-950/40 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
           
           {/* Gauge Score Widget */}
-          <div className="md:col-span-4 flex flex-col items-center justify-center text-center space-y-3 border-b md:border-b-0 md:border-r border-slate-800/80 pb-6 md:pb-0 md:pr-6">
-            <div className="relative w-36 h-36 flex items-center justify-center">
+          <div className="md:col-span-5 flex flex-col items-center justify-center text-center space-y-3 border-b md:border-b-0 md:border-r border-slate-800/80 pb-6 md:pb-0 md:pr-6">
+            <div className="relative w-40 h-40 flex items-center justify-center">
               {/* Outer Glow Ring */}
               <svg className="w-full h-full transform -rotate-90">
                 <circle
-                  cx="72"
-                  cy="72"
-                  r="60"
+                  cx="80"
+                  cy="80"
+                  r="68"
                   stroke="currentColor"
-                  strokeWidth="10"
+                  strokeWidth="11"
                   className="text-slate-800"
                   fill="transparent"
                 />
                 <circle
-                  cx="72"
-                  cy="72"
-                  r="60"
+                  cx="80"
+                  cy="80"
+                  r="68"
                   stroke="currentColor"
-                  strokeWidth="10"
-                  strokeDasharray="377"
-                  strokeDashoffset={377 - (377 * report.overallScore) / 100}
+                  strokeWidth="11"
+                  strokeDasharray="427"
+                  strokeDashoffset={427 - (427 * Math.min(100, Math.max(0, overallPercentage))) / 100}
                   strokeLinecap="round"
                   className="text-indigo-500 transition-all duration-1000"
                   fill="transparent"
                 />
               </svg>
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-4xl font-black text-white">{report.overallScore}</span>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">out of 100</span>
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-2">
+                <div className="flex items-baseline justify-center gap-1">
+                  <span className="text-3xl sm:text-4xl font-black text-white">{marksObtained}</span>
+                  <span className="text-xs font-bold text-slate-400">/{totalPossibleMarks}</span>
+                </div>
+                <span className="text-[11px] font-mono font-bold text-cyan-400 mt-0.5">{overallPercentage}% Marks</span>
               </div>
             </div>
 
-            <div className="space-y-1">
-              <span className="inline-block text-xs font-bold text-emerald-400 bg-emerald-950/80 border border-emerald-800 px-3 py-1 rounded-full">
-                {report.matchRating}
+            <div className="space-y-1.5">
+              <span className={`inline-block text-xs font-extrabold px-3.5 py-1 rounded-full border tracking-wide uppercase ${verdictBand.badgeClass}`}>
+                Verdict: {verdictLabel}
               </span>
-              <p className="text-[11px] text-slate-400">Exceeds candidate benchmarks for {report.company}</p>
+              <p className="text-[11px] text-slate-400 max-w-xs">{verdictBand.description}</p>
             </div>
           </div>
 
-          {/* Quick Metrics Cards */}
-          <div className="md:col-span-8 grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {/* Quick Metrics & Question Status Breakdown Cards */}
+          <div className="md:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-4">
             
+            {/* Status Breakdown Card */}
+            <div className="bg-slate-950/80 border border-slate-800/80 p-4 rounded-2xl space-y-3 sm:col-span-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                  <BarChart3 className="w-4 h-4 text-indigo-400" /> Question Status Breakdown
+                </span>
+                <span className="text-[11px] font-mono text-slate-400">
+                  Fixed Pool: {report.transcripts.length} Questions ({totalPossibleMarks} Marks)
+                </span>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2.5 text-center">
+                <div className="bg-slate-900/90 border border-emerald-900/40 p-2.5 rounded-xl">
+                  <div className="text-[10px] uppercase font-bold text-emerald-400 flex items-center justify-center gap-1">
+                    <CheckCircle2 className="w-3 h-3" /> Answered
+                  </div>
+                  <div className="text-lg font-bold text-white font-mono mt-0.5">
+                    {answeredCount} <span className="text-xs font-normal text-slate-400">/ {report.transcripts.length}</span>
+                  </div>
+                  <div className="text-[10px] text-slate-400">Eligible for AI grading</div>
+                </div>
+
+                <div className="bg-slate-900/90 border border-slate-800 p-2.5 rounded-xl">
+                  <div className="text-[10px] uppercase font-bold text-slate-400 flex items-center justify-center gap-1">
+                    <AlertCircle className="w-3 h-3" /> Skipped
+                  </div>
+                  <div className="text-lg font-bold text-slate-300 font-mono mt-0.5">
+                    {skippedCount}
+                  </div>
+                  <div className="text-[10px] text-slate-500">0 / 100 Marks</div>
+                </div>
+
+                <div className="bg-slate-900/90 border border-rose-900/40 p-2.5 rounded-xl">
+                  <div className="text-[10px] uppercase font-bold text-rose-400 flex items-center justify-center gap-1">
+                    <AlertTriangle className="w-3 h-3" /> Invalid
+                  </div>
+                  <div className="text-lg font-bold text-rose-300 font-mono mt-0.5">
+                    {invalidCount}
+                  </div>
+                  <div className="text-[10px] text-rose-400/80">Low-effort (0 / 100)</div>
+                </div>
+              </div>
+            </div>
+
             {/* Metric 1 */}
             <div className="bg-slate-950/80 border border-slate-800/80 p-4 rounded-2xl space-y-2">
               <div className="text-xs text-slate-400 font-medium">Communication Clarity</div>
@@ -144,27 +211,17 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, onSelectTab }) =
               <div className="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden">
                 <div className="h-full bg-emerald-400 rounded-full" style={{ width: `${report.metrics.communication}%` }} />
               </div>
-              <p className="text-[10px] text-emerald-400 font-semibold">High sentiment & cadence</p>
+              <p className="text-[10px] text-emerald-400 font-semibold">Structure & coherence</p>
             </div>
 
             {/* Metric 2 */}
             <div className="bg-slate-950/80 border border-slate-800/80 p-4 rounded-2xl space-y-2">
-              <div className="text-xs text-slate-400 font-medium">Technical Depth</div>
+              <div className="text-xs text-slate-400 font-medium">Technical Precision</div>
               <div className="text-2xl font-bold text-white">{report.metrics.technical}%</div>
               <div className="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden">
                 <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${report.metrics.technical}%` }} />
               </div>
-              <p className="text-[10px] text-indigo-400 font-semibold">Solid architectural trade-offs</p>
-            </div>
-
-            {/* Metric 3 */}
-            <div className="bg-slate-950/80 border border-slate-800/80 p-4 rounded-2xl space-y-2">
-              <div className="text-xs text-slate-400 font-medium">Tone & Confidence</div>
-              <div className="text-2xl font-bold text-white">{report.metrics.toneAndConfidence}%</div>
-              <div className="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden">
-                <div className="h-full bg-cyan-400 rounded-full" style={{ width: `${report.metrics.toneAndConfidence}%` }} />
-              </div>
-              <p className="text-[10px] text-cyan-400 font-semibold">Calm & authoritative pace</p>
+              <p className="text-[10px] text-indigo-400 font-semibold">Accuracy & domain depth</p>
             </div>
 
           </div>
@@ -400,19 +457,26 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, onSelectTab }) =
                     </div>
 
                     <div className="flex items-center gap-4">
-                      {item.evaluation?.isUnscored ? (
+                      {item.status === 'answered' ? (
                         <div className="text-right">
-                          <div className="text-xs font-bold text-amber-400 bg-amber-950/80 px-2 py-0.5 rounded border border-amber-800">
-                            Unscored
+                          <div className="text-xs font-mono font-bold text-emerald-400 bg-emerald-950/80 px-2.5 py-0.5 rounded-full border border-emerald-800">
+                            Answered • {item.score} / 100
                           </div>
-                          <div className="text-[10px] text-amber-300/80 mt-0.5">
-                            {item.evaluation.wordCount !== undefined ? `${item.evaluation.wordCount}/60 words` : "< 60 words"}
+                          <div className="text-[10px] text-slate-500 mt-0.5">{Math.floor(item.timeSec / 60)}m {item.timeSec % 60}s duration</div>
+                        </div>
+                      ) : item.status === 'invalid' ? (
+                        <div className="text-right">
+                          <div className="text-xs font-mono font-bold text-rose-400 bg-rose-950/80 px-2.5 py-0.5 rounded-full border border-rose-800">
+                            Invalid Answer • 0 / 100
                           </div>
+                          <div className="text-[10px] text-rose-400/80 mt-0.5">Low-effort non-answer</div>
                         </div>
                       ) : (
                         <div className="text-right">
-                          <div className="text-xs font-mono font-bold text-emerald-400">{item.score} / 100 Score</div>
-                          <div className="text-[10px] text-slate-500">{Math.floor(item.timeSec / 60)}m {item.timeSec % 60}s duration</div>
+                          <div className="text-xs font-mono font-bold text-slate-400 bg-slate-900 px-2.5 py-0.5 rounded-full border border-slate-700">
+                            Skipped • 0 / 100
+                          </div>
+                          <div className="text-[10px] text-slate-500 mt-0.5">Unattempted</div>
                         </div>
                       )}
                       {isExpanded ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
@@ -422,172 +486,151 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, onSelectTab }) =
                   {isExpanded && (
                     <div className="px-5 pb-5 pt-2 border-t border-slate-800/80 space-y-4 bg-slate-950/50">
                       
-                      {/* Unscored Explanation Banner */}
-                      {item.evaluation?.isUnscored && (
-                        <div className="bg-amber-950/40 border border-amber-500/40 rounded-xl p-3.5 flex items-start gap-2.5 text-xs text-amber-200">
-                          <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                      {/* Skipped Notice */}
+                      {item.status === 'skipped' && (
+                        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex items-start gap-3 text-xs text-slate-300">
+                          <AlertCircle className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
                           <div>
-                            <span className="font-bold text-amber-300 block">Answer Unscored</span>
-                            <p className="mt-0.5 text-amber-200/90 leading-relaxed">
-                              {item.evaluation.unscoredReason || "Responses under 60 words or lacking meaningful substance are left unscored. Minimum 60 words with clear technical accuracy required."}
+                            <span className="font-bold text-slate-200 block">Question Was Skipped</span>
+                            <p className="mt-0.5 text-slate-400 leading-relaxed">
+                              This question was skipped and no answer was submitted. It contributes 0 marks out of 100 towards the {totalPossibleMarks} marks pool.
                             </p>
-                            {item.evaluation.wordCount !== undefined && (
-                              <span className="inline-block mt-1 font-mono text-[10px] text-amber-400/90 bg-amber-950 px-2 py-0.5 rounded border border-amber-800">
-                                Word count: {item.evaluation.wordCount} words (Minimum 60 words required)
-                              </span>
-                            )}
                           </div>
                         </div>
                       )}
 
-                      {/* Question-Level Dimensional Scores (Only shown for scored answers) */}
-                      {!item.evaluation?.isUnscored && item.dimensionalScores && (
-                        <div className="bg-slate-900 border border-slate-800 rounded-xl p-3.5 space-y-2.5">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-                              <Scale className="w-3.5 h-3.5 text-indigo-400" /> Rubric Evaluation: 5 Dimensions
+                      {/* Invalid / Low-Effort Answer Notice */}
+                      {item.status === 'invalid' && (
+                        <div className="bg-rose-950/30 border border-rose-500/40 rounded-xl p-4 space-y-2 text-xs text-rose-200">
+                          <div className="flex items-start gap-2.5">
+                            <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+                            <div>
+                              <span className="font-bold text-rose-300 block">Invalid / Low-Effort Answer (0 / 100 Marks)</span>
+                              <p className="mt-0.5 text-rose-200/90 leading-relaxed">
+                                {item.justification || "Submitted response was identified as an evasive non-answer, degenerate input, or under 3 characters. It was scored 0 directly without being sent to the AI evaluator."}
+                              </p>
+                            </div>
+                          </div>
+                          {item.candidateAnswer && item.candidateAnswer !== "(No response provided / Skipped)" && (
+                            <div className="mt-2 bg-slate-950/80 border border-slate-800 rounded-lg p-3 text-xs text-slate-300 font-mono">
+                              "{item.candidateAnswer}"
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Answered: Deep Evaluator Feedback */}
+                      {item.status === 'answered' && (
+                        <>
+                          {/* AI Justification Box */}
+                          <div className="bg-gradient-to-r from-indigo-950/60 to-slate-900 border border-indigo-500/30 rounded-xl p-4 text-xs space-y-1.5 shadow-md">
+                            <span className="font-bold text-indigo-300 flex items-center gap-1.5 uppercase tracking-wider text-[11px]">
+                              <BrainCircuit className="w-4 h-4 text-indigo-400" /> AI Evaluator Justification & Verdict
                             </span>
-                            <span className="text-[10px] text-slate-500 font-mono">Calibrated Scoring</span>
+                            <p className="text-slate-200 leading-relaxed text-xs">
+                              {item.justification || item.aiNotes}
+                            </p>
                           </div>
 
-                          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs">
-                            <div className="bg-slate-950 p-2 rounded-lg border border-slate-850">
-                              <div className="text-[10px] text-slate-400">Relevance</div>
-                              <div className="font-bold text-white font-mono mt-0.5">{item.dimensionalScores.relevance}%</div>
+                          {/* Strengths & Gaps Side-by-Side Breakdown */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                            {/* Strengths */}
+                            <div className="bg-emerald-950/20 border border-emerald-800/40 rounded-xl p-4 space-y-2 text-xs">
+                              <span className="font-bold text-emerald-300 flex items-center gap-1.5 uppercase tracking-wider text-[11px]">
+                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Evaluator Strengths (What Was Covered Well)
+                              </span>
+                              {item.strengths && item.strengths.length > 0 ? (
+                                <ul className="list-disc list-inside space-y-1 text-slate-200 leading-relaxed">
+                                  {item.strengths.map((str, idx) => (
+                                    <li key={idx}>{str}</li>
+                                  ))}
+                                </ul>
+                              ) : (
+                                <p className="text-slate-400 italic">No specific standout strengths highlighted.</p>
+                              )}
                             </div>
-                            <div className="bg-slate-950 p-2 rounded-lg border border-slate-850">
-                              <div className="text-[10px] text-slate-400">STAR Structure</div>
-                              <div className="font-bold text-white font-mono mt-0.5">{item.dimensionalScores.starStructure}%</div>
+
+                            {/* Gaps */}
+                            <div className="bg-amber-950/20 border border-amber-800/40 rounded-xl p-4 space-y-2 text-xs">
+                              <span className="font-bold text-amber-300 flex items-center gap-1.5 uppercase tracking-wider text-[11px]">
+                                <AlertCircle className="w-3.5 h-3.5 text-amber-400" /> Evaluator Gaps (Missing Depth & Areas to Improve)
+                              </span>
+                              {item.gaps && item.gaps.length > 0 ? (
+                                <ul className="list-disc list-inside space-y-1 text-slate-200 leading-relaxed">
+                                  {item.gaps.map((gap, idx) => (
+                                    <li key={idx}>{gap}</li>
+                                  ))}
+                                </ul>
+                              ) : (
+                                <p className="text-slate-400 italic">No critical gaps identified.</p>
+                              )}
                             </div>
-                            <div className="bg-slate-950 p-2 rounded-lg border border-slate-850">
-                              <div className="text-[10px] text-slate-400">Quantifiable Metrics</div>
-                              <div className={`font-bold font-mono mt-0.5 ${item.dimensionalScores.quantifiableImpact >= 75 ? 'text-emerald-400' : 'text-amber-400'}`}>
-                                {item.dimensionalScores.quantifiableImpact}%
+                          </div>
+
+                          {/* 5-Component Precision Scores */}
+                          {item.componentScores && (
+                            <div className="bg-slate-900 border border-slate-800 rounded-xl p-3.5 space-y-2.5">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                                  <Scale className="w-3.5 h-3.5 text-indigo-400" /> 5 Component Score Breakdown
+                                </span>
+                                <span className="text-[10px] text-slate-400 font-mono">Calibrated (0-100)</span>
+                              </div>
+
+                              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs">
+                                <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800 text-center">
+                                  <div className="text-[10px] text-slate-400">Relevance</div>
+                                  <div className="font-bold text-white font-mono mt-0.5">{item.componentScores.relevance}%</div>
+                                </div>
+                                <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800 text-center">
+                                  <div className="text-[10px] text-slate-400">Technical Accuracy</div>
+                                  <div className="font-bold text-white font-mono mt-0.5">{item.componentScores.technicalAccuracy}%</div>
+                                </div>
+                                <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800 text-center">
+                                  <div className="text-[10px] text-slate-400">Depth & Completeness</div>
+                                  <div className="font-bold text-white font-mono mt-0.5">{item.componentScores.depthAndCompleteness}%</div>
+                                </div>
+                                <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800 text-center">
+                                  <div className="text-[10px] text-slate-400">Clarity & Structure</div>
+                                  <div className="font-bold text-white font-mono mt-0.5">{item.componentScores.clarityAndStructure}%</div>
+                                </div>
+                                <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800 text-center col-span-2 sm:col-span-1">
+                                  <div className="text-[10px] text-slate-400">Concrete Examples</div>
+                                  <div className={`font-bold font-mono mt-0.5 ${item.componentScores.examples >= 70 ? 'text-emerald-400' : 'text-amber-400'}`}>
+                                    {item.componentScores.examples}%
+                                  </div>
+                                </div>
                               </div>
                             </div>
-                            <div className="bg-slate-950 p-2 rounded-lg border border-slate-850">
-                              <div className="text-[10px] text-slate-400">Technical Precision</div>
-                              <div className="font-bold text-white font-mono mt-0.5">{item.dimensionalScores.technicalPrecision}%</div>
-                            </div>
-                            <div className="bg-slate-950 p-2 rounded-lg border border-slate-850 col-span-2 sm:col-span-1">
-                              <div className="text-[10px] text-slate-400">Seniority Calib.</div>
-                              <div className="font-bold text-white font-mono mt-0.5">{item.dimensionalScores.seniorityCalibration}%</div>
+                          )}
+
+                          {/* Candidate Answer Box */}
+                          <div className="space-y-2">
+                            <span className="text-xs font-semibold text-slate-400 flex items-center gap-1.5">
+                              <MessageSquare className="w-3.5 h-3.5 text-cyan-400" /> Candidate Transcribed Answer
+                            </span>
+                            <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 text-xs text-slate-300 leading-relaxed font-sans">
+                              "{item.candidateAnswer}"
                             </div>
                           </div>
-                        </div>
-                      )}
 
-                      {/* Candidate Answer Box */}
-                      <div className="space-y-2">
-                        <span className="text-xs font-semibold text-slate-400 flex items-center gap-1.5">
-                          <MessageSquare className="w-3.5 h-3.5 text-cyan-400" /> Transcribed Response
-                        </span>
-                        <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 text-xs text-slate-300 leading-relaxed font-sans">
-                          "{item.candidateAnswer}"
-                        </div>
-                      </div>
-
-                      {/* STAR Stage Breakdown if present */}
-                      {item.starAnalysis && (
-                        <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-4 space-y-3">
-                          <span className="text-xs font-bold text-indigo-300 uppercase tracking-wider flex items-center gap-1.5">
-                            <Target className="w-3.5 h-3.5 text-indigo-400" /> STAR Methodological Dissection
-                          </span>
-
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
-                            <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-1">
-                              <div className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">Situation (Context)</div>
-                              <p className="text-slate-300 leading-relaxed text-[11px]">{item.starAnalysis.situation}</p>
+                          {/* Score Booster Rewrite if available */}
+                          {item.scoreBoosterRewrite && (
+                            <div className="bg-emerald-950/20 border border-emerald-500/30 rounded-xl p-4 space-y-2">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-bold text-emerald-300 uppercase tracking-wider flex items-center gap-1.5">
+                                  <Lightbulb className="w-4 h-4 text-emerald-400" /> Score Booster: Exemplary Answer Rewrite
+                                </span>
+                                <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950 px-2 py-0.5 rounded border border-emerald-800">
+                                  Exemplary Model
+                                </span>
+                              </div>
+                              <p className="text-xs text-slate-200 leading-relaxed font-sans bg-slate-950/80 p-3.5 rounded-lg border border-emerald-900/40 italic">
+                                "{item.scoreBoosterRewrite}"
+                              </p>
                             </div>
-                            <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-1">
-                              <div className="text-[10px] font-bold text-blue-400 uppercase tracking-wider">Task (Objective)</div>
-                              <p className="text-slate-300 leading-relaxed text-[11px]">{item.starAnalysis.task}</p>
-                            </div>
-                            <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-1">
-                              <div className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider">Action (Ownership)</div>
-                              <p className="text-slate-300 leading-relaxed text-[11px]">{item.starAnalysis.action}</p>
-                            </div>
-                            <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-1">
-                              <div className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">Result (Impact)</div>
-                              <p className="text-slate-300 leading-relaxed text-[11px]">{item.starAnalysis.result}</p>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Inline Highlights */}
-                      <div className="space-y-2">
-                        <span className="text-xs font-semibold text-slate-400">AI Highlights & Metric Verification</span>
-                        <div className="flex flex-wrap gap-2">
-                          {item.highlights.map((h, idx) => (
-                            <span 
-                              key={idx}
-                              className={`text-[11px] font-semibold px-2.5 py-1 rounded-md border flex items-center gap-1.5 ${
-                                h.type === 'positive' 
-                                  ? 'bg-emerald-950/80 text-emerald-300 border-emerald-800'
-                                  : h.type === 'warning'
-                                  ? 'bg-amber-950/80 text-amber-300 border-amber-800'
-                                  : 'bg-blue-950/80 text-blue-300 border-blue-800'
-                              }`}
-                            >
-                              <span className="w-1.5 h-1.5 rounded-full fill-current" />
-                              <strong>{h.label}:</strong> "{h.text}"
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* AI Assessor Notes */}
-                      <div className="bg-gradient-to-r from-indigo-950/40 to-slate-900 p-4 rounded-xl border border-indigo-500/20 text-xs space-y-1">
-                        <span className="font-bold text-indigo-300 flex items-center gap-1.5">
-                          <BrainCircuit className="w-3.5 h-3.5" /> Assessor Rubric Notes
-                        </span>
-                        <p className="text-slate-300 leading-relaxed">{item.aiNotes}</p>
-                      </div>
-
-                      {/* Factual Accuracy Checks */}
-                      {item.evaluation?.incorrectClaims && item.evaluation.incorrectClaims.length > 0 && (
-                        <div className="bg-rose-950/30 border border-rose-500/40 rounded-xl p-4 space-y-2 text-xs">
-                          <span className="font-bold text-rose-300 flex items-center gap-1.5 uppercase tracking-wider text-[11px]">
-                            <AlertTriangle className="w-4 h-4 text-rose-400" /> Factual Accuracy Issues Detected
-                          </span>
-                          <ul className="list-disc list-inside space-y-1 text-rose-200/90 leading-relaxed">
-                            {item.evaluation.incorrectClaims.map((claim, idx) => (
-                              <li key={idx}>{claim}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-
-                      {/* Missed Core Concepts */}
-                      {item.evaluation?.missedPoints && item.evaluation.missedPoints.length > 0 && (
-                        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-2 text-xs">
-                          <span className="font-bold text-indigo-300 flex items-center gap-1.5 uppercase tracking-wider text-[11px]">
-                            <Target className="w-3.5 h-3.5 text-indigo-400" /> Key Technical Concepts Missed
-                          </span>
-                          <ul className="list-disc list-inside space-y-1 text-slate-300 leading-relaxed">
-                            {item.evaluation.missedPoints.map((pt, idx) => (
-                              <li key={idx}>{pt}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-
-                      {/* Score Booster Rewrite if available */}
-                      {item.scoreBoosterRewrite && (
-                        <div className="bg-emerald-950/20 border border-emerald-500/30 rounded-xl p-4 space-y-2">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-bold text-emerald-300 uppercase tracking-wider flex items-center gap-1.5">
-                              <Lightbulb className="w-4 h-4 text-emerald-400" /> Score Booster: 95+ FAANG-Calibrated Exemplary Rewrite
-                            </span>
-                            <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950 px-2 py-0.5 rounded border border-emerald-800">
-                              +15 Pt Potential
-                            </span>
-                          </div>
-                          <p className="text-xs text-slate-200 leading-relaxed font-sans bg-slate-950/80 p-3.5 rounded-lg border border-emerald-900/40 italic">
-                            "{item.scoreBoosterRewrite}"
-                          </p>
-                        </div>
+                          )}
+                        </>
                       )}
 
                     </div>

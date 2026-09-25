@@ -7,6 +7,16 @@ export type AppTab =
   | 'resume-review'
   | 'about';
 
+export type QuestionStatus = 'answered' | 'skipped' | 'invalid';
+
+export interface ComponentScores {
+  relevance: number; // 0-100: Relevance to the actual question asked
+  technicalAccuracy: number; // 0-100: Technical/conceptual accuracy
+  depthAndCompleteness: number; // 0-100: Depth and completeness
+  clarityAndStructure: number; // 0-100: Clarity and structure
+  examples: number; // 0-100: Use of concrete examples or specifics
+}
+
 export interface Question {
   id: number;
   question: string;
@@ -14,7 +24,7 @@ export interface Question {
   recommendedDurationSec: number;
   starFocus: string;
   keySkill: string;
-  difficulty?: 'Easy' | 'Medium' | 'Hard' | 'Expert';
+  difficulty?: 'Easy' | 'Medium' | 'Hard';
   expectedAnswerType?: 'conceptual' | 'behavioral' | 'system-design' | 'case';
   idealAnswerPoints?: string[];
 }
@@ -30,10 +40,16 @@ export interface DimensionalScores {
 export interface AnswerEvaluation {
   questionId: number;
   candidateText: string;
+  status: QuestionStatus;
+  score: number; // 0-100
   overallScore: number;
-  clarityScore: number;
-  technicalScore: number;
-  sentimentScore: number;
+  strengths: string[];
+  gaps: string[];
+  justification: string;
+  componentScores?: ComponentScores;
+  clarityScore?: number;
+  technicalScore?: number;
+  sentimentScore?: number;
   isUnscored?: boolean;
   unscoredReason?: string;
   wordCount?: number;
@@ -41,10 +57,9 @@ export interface AnswerEvaluation {
   incorrectClaims?: string[];
   missedPoints?: string[];
   evaluatorConfidence?: 'low' | 'medium' | 'high';
-  dimensionalScores: DimensionalScores;
-  strengths: string[];
-  improvements: string[];
-  starAnalysis: {
+  dimensionalScores?: DimensionalScores;
+  improvements?: string[];
+  starAnalysis?: {
     situation: string;
     task: string;
     action: string;
@@ -58,8 +73,8 @@ export interface AnswerEvaluation {
 
 export interface InterviewConfig {
   role: string;
-  level: 'Junior / Entry' | 'Mid-Level' | 'Senior / Lead' | 'Executive / Director';
-  difficulty: 'Easy' | 'Medium' | 'Hard' | 'Expert';
+  level: 'Junior / Entry' | 'Mid-Level' | 'Senior / Lead';
+  difficulty: 'Easy' | 'Medium' | 'Hard';
   company: string;
   durationMinutes: number;
   customNotes?: string;
@@ -72,6 +87,10 @@ export interface InterviewReport {
   date: string;
   role: string;
   company: string;
+  marksObtained: number; // e.g. 65
+  totalPossibleMarks: number; // e.g. 500 (questionCount * 100)
+  overallPercentage: number; // e.g. 13.00
+  verdict: string; // 'Excellent' | 'Good' | 'Average' | 'Needs Improvement' | 'Poor'
   overallScore: number;
   matchRating: string;
   metrics: {
@@ -92,9 +111,14 @@ export interface InterviewReport {
     questionText: string;
     category: string;
     candidateAnswer: string;
+    status: QuestionStatus;
     timeSec: number;
     score: number;
+    strengths?: string[];
+    gaps?: string[];
+    justification?: string;
     aiNotes: string;
+    componentScores?: ComponentScores;
     dimensionalScores?: DimensionalScores;
     starAnalysis?: {
       situation: string;
@@ -108,6 +132,8 @@ export interface InterviewReport {
       type: 'positive' | 'warning' | 'tip';
       label: string;
     }[];
+    evaluation?: any;
+    evalFailed?: boolean;
   }[];
   emotionalCurve: {
     questionIndex: number;

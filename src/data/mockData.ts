@@ -57,17 +57,32 @@ export const SAMPLE_QUESTIONS: Question[] = [
   },
   {
     id: 4,
-    question: "Tell me about a time when a critical bug or design flaw escaped to production under your watch. What was the post-mortem process?",
-    category: "Ownership & Resilience",
+    question: "Explain your methodology for conducting an end-to-end design system audit across disparate web and mobile applications.",
+    category: "Design Systems & Architecture",
     recommendedDurationSec: 180,
-    starFocus: "Result & Learning",
-    keySkill: "Post-Mortem Accountability",
+    starFocus: "Action & Result",
+    keySkill: "Systems Thinking",
+    difficulty: "Medium",
+    expectedAnswerType: "system-design",
+    idealAnswerPoints: [
+      "Inventory tooling and component tokenization approach",
+      "Cross-functional synchronization between designers and engineers",
+      "Deprecation strategy for legacy UI patterns"
+    ]
+  },
+  {
+    id: 5,
+    question: "How do you manage conflicting priorities when engineering demands technical refactoring while marketing requests immediate growth experiments?",
+    category: "Stakeholder Alignment & Negotiation",
+    recommendedDurationSec: 180,
+    starFocus: "Situation & Result",
+    keySkill: "Prioritization & Diplomacy",
     difficulty: "Medium",
     expectedAnswerType: "behavioral",
     idealAnswerPoints: [
-      "Clear ownership of root cause without blaming others",
-      "Immediate mitigation and customer communication",
-      "Preventative guardrails and automated tests added"
+      "Framework for quantifying opportunity cost and technical risk",
+      "Shared sprint capacity allocation (e.g. 70/20/10 model)",
+      "Transparent cadence and executive trade-off sign-off"
     ]
   }
 ];
@@ -78,11 +93,15 @@ export const SAMPLE_REPORT: InterviewReport = {
   date: "Today, 10:45 AM",
   role: "Senior Product Designer",
   company: "Global Tech Corp",
-  overallScore: 85,
-  matchRating: "Strong Match for Senior Roles (Top 12% Candidate)",
+  marksObtained: 420,
+  totalPossibleMarks: 500,
+  overallPercentage: 84.0,
+  verdict: "Good",
+  overallScore: 84,
+  matchRating: "Good Match for Senior Roles (84.0% Marks Pool)",
   metrics: {
-    communication: 92,
-    technical: 78,
+    communication: 90,
+    technical: 82,
     toneAndConfidence: 81
   },
   dimensionalScores: {
@@ -110,7 +129,7 @@ export const SAMPLE_REPORT: InterviewReport = {
     {
       id: 3,
       title: "Tighten STAR Result Quantifications",
-      description: "You set up the situation and actions brilliantly, but forgot to state concrete percentage impact metrics on 2 out of 4 questions.",
+      description: "You set up the situation and actions brilliantly, but forgot to state concrete percentage impact metrics on question 3.",
       priority: "High",
       category: "STAR Method"
     }
@@ -121,9 +140,25 @@ export const SAMPLE_REPORT: InterviewReport = {
       questionText: "Walk me through a recent complex project where you had to balance aggressive business deadlines with technical design debt.",
       category: "System Design & Trade-offs",
       candidateAnswer: "In my previous role at Acme Health, we were building a multi-tenant dashboard. We had a 6-week hard deadline before our Q3 press release. I advocated for a modular component architecture while deferring custom micro-interactions to v1.1. This allowed engineers to reuse 80% of existing library elements, launching 3 days ahead of schedule and reducing engineering churn by 25%.",
+      status: "answered",
       timeSec: 142,
       score: 88,
+      strengths: [
+        "Clearly articulated pragmatic trade-offs between MVP release scope and v1.1 polish",
+        "Cited concrete quantitative metrics (80% reuse, 3 days ahead, 25% churn reduction)"
+      ],
+      gaps: [
+        "Could have detailed how technical debt was logged and tracked in the engineering backlog after launch"
+      ],
+      justification: "The candidate provides a structured, highly relevant answer demonstrating sound engineering pragmatism and concrete metric outcomes. Gaps are minor and limited to post-launch debt reconciliation.",
       aiNotes: "Excellent STAR execution. The clear distinction between MVP scope and v1.1 polish showed strong pragmatic prioritization.",
+      componentScores: {
+        relevance: 94,
+        technicalAccuracy: 88,
+        depthAndCompleteness: 85,
+        clarityAndStructure: 92,
+        examples: 88
+      },
       dimensionalScores: {
         relevance: 94,
         starStructure: 92,
@@ -149,9 +184,25 @@ export const SAMPLE_REPORT: InterviewReport = {
       questionText: "Describe a situation where user research contradicted the business direction proposed by executive leadership. How did you advocate for the user?",
       category: "Stakeholder Alignment & Data",
       candidateAnswer: "During a major checkout funnel overhaul, leadership wanted an intrusive pop-up upsell. Usability testing showed an 18% drop-off rate. I created a fast 3-minute video recording showing user frustration in live testing, and proposed an inline contextual recommendation instead, which increased upsell conversion by 12% without harming checkout throughput.",
+      status: "answered",
       timeSec: 165,
       score: 91,
+      strengths: [
+        "Compelling use of qualitative session clips as objective stakeholder alignment leverage",
+        "Demonstrated dual focus on protecting checkout throughput while achieving corporate upsell targets"
+      ],
+      gaps: [
+        "Could have mentioned the sample size and statistical confidence of the usability test"
+      ],
+      justification: "Outstanding answer highlighting senior-level stakeholder influence and user empathy. The candidate balanced business and UX concerns with concrete telemetry.",
       aiNotes: "Outstanding stakeholder influence! Using user session clips as objective evidence is a benchmark senior practice.",
+      componentScores: {
+        relevance: 96,
+        technicalAccuracy: 90,
+        depthAndCompleteness: 90,
+        clarityAndStructure: 94,
+        examples: 92
+      },
       dimensionalScores: {
         relevance: 96,
         starStructure: 94,
@@ -176,10 +227,27 @@ export const SAMPLE_REPORT: InterviewReport = {
       questionId: 3,
       questionText: "How do you establish quantitative success metrics for a major product revamp before launch, and how do you pivot if initial telemetry is negative?",
       category: "Data-Driven Decisions",
-      candidateAnswer: "I define primary North Star metrics along with secondary counter-metrics so we don't accidentally game the system. On our SaaS platform, our North Star was 7-day user retention, guarded by onboarding completion speed...",
+      candidateAnswer: "I define primary North Star metrics along with secondary counter-metrics so we don't accidentally game the system. On our SaaS platform, our North Star was 7-day user retention, guarded by onboarding completion speed. When telemetry dipped initially, we isolated friction in the auth workflow and iterated quickly.",
+      status: "answered",
       timeSec: 188,
       score: 79,
+      strengths: [
+        "Solid conceptual grasp of pairing North Star indicators with guardrail counter-metrics",
+        "Recognized the importance of monitoring onboarding funnel speed"
+      ],
+      gaps: [
+        "Lacked a specific rollback threshold or statistical criterion for triggering the pivot",
+        "Could have provided deeper operational detail on telemetry tooling or alerting"
+      ],
+      justification: "A good conceptual response that correctly identifies key metric principles. However, it lacks specific numerical thresholds for triggering rollback pivots, keeping it in the high-70s range.",
       aiNotes: "Good conceptual framework with North Star + Counter Metrics. Missed an opportunity to share a specific time telemetry was negative.",
+      componentScores: {
+        relevance: 85,
+        technicalAccuracy: 80,
+        depthAndCompleteness: 75,
+        clarityAndStructure: 82,
+        examples: 70
+      },
       dimensionalScores: {
         relevance: 85,
         starStructure: 75,
@@ -191,12 +259,98 @@ export const SAMPLE_REPORT: InterviewReport = {
         situation: "Establishing evaluation telemetry framework for major SaaS product rewrite.",
         task: "Align engineering and product on un-gameable North Star and health guardrails.",
         action: "Defined 7-day retention pairing with counter-metrics to monitor cognitive load.",
-        result: "Framework adopted across 3 squads, though response lacked concrete pivot metrics."
+        result: "Framework adopted across squads, though response lacked concrete pivot metrics."
       },
       scoreBoosterRewrite: "Add a concrete historical story: 'When week 1 telemetry dropped 8%, I ran funnel cohort analysis, identified a broken Safari auth token, and shipped a hotfix restoring 99.8% completion.'",
       highlights: [
         { text: "secondary counter-metrics", type: "positive", label: "Balanced Analytics" },
         { text: "guarded by onboarding completion speed", type: "tip", label: "Could add metric outcome" }
+      ]
+    },
+    {
+      questionId: 4,
+      questionText: "Explain your methodology for conducting an end-to-end design system audit across disparate web and mobile applications.",
+      category: "Design Systems & Architecture",
+      candidateAnswer: "I started by running automated inventory scripts across our React web repositories and mobile codebases to identify token drift. We discovered 42 divergent button variants. I cataloged them into a centralized Figma audit sheet, worked with platform engineering leads to define semantic design tokens, and created a progressive deprecation timeline across two releases.",
+      status: "answered",
+      timeSec: 170,
+      score: 84,
+      strengths: [
+        "Systematic automated inventory approach to uncover token drift across web and mobile",
+        "Clear collaboration with engineering on semantic tokens and progressive deprecation"
+      ],
+      gaps: [
+        "Could have highlighted accessibility (WCAG AA/AAA) compliance audits during component rationalization"
+      ],
+      justification: "Strong technical answer detailing automated discovery and semantic token consolidation. Very solid execution with minor omission regarding accessibility contrast testing.",
+      aiNotes: "High-rigor systems thinking. Identified 42 divergent variants with a concrete resolution timeline.",
+      componentScores: {
+        relevance: 90,
+        technicalAccuracy: 86,
+        depthAndCompleteness: 82,
+        clarityAndStructure: 86,
+        examples: 82
+      },
+      dimensionalScores: {
+        relevance: 90,
+        starStructure: 86,
+        quantifiableImpact: 80,
+        technicalPrecision: 86,
+        seniorityCalibration: 84
+      },
+      starAnalysis: {
+        situation: "Token drift and visual inconsistency across disparate web and mobile apps.",
+        task: "Conduct complete inventory and establish authoritative design tokens.",
+        action: "Executed automated repo scans, cataloged 42 variants, and established semantic token mappings.",
+        result: "Consolidated variants into unified primitives with progressive deprecation."
+      },
+      scoreBoosterRewrite: "Mention automated regression checks using Storybook visual test suites to prevent future drift.",
+      highlights: [
+        { text: "42 divergent button variants", type: "warning", label: "Quantified Inconsistency" },
+        { text: "semantic design tokens", type: "positive", label: "Industry Best Practice" }
+      ]
+    },
+    {
+      questionId: 5,
+      questionText: "How do you manage conflicting priorities when engineering demands technical refactoring while marketing requests immediate growth experiments?",
+      category: "Stakeholder Alignment & Negotiation",
+      candidateAnswer: "I instituted a 70/20/10 capacity allocation framework: 70% core roadmap, 20% technical debt and refactoring, and 10% high-velocity growth experiments. We established joint weekly grooming where marketing brought projected business revenue impact and engineering brought system stability risk scores, allowing executive trade-offs to be made on objective data.",
+      status: "answered",
+      timeSec: 155,
+      score: 78,
+      strengths: [
+        "Pragmatic percentage-based capacity governance (70/20/10 model)",
+        "Objective criteria weighting system stability risk against projected revenue gains"
+      ],
+      gaps: [
+        "Did not describe how emergencies or missed experiment targets are rebalanced in future sprints"
+      ],
+      justification: "Effective behavioral response with a proven capacity model. Lacks depth on post-experiment retrospectives and rebalancing cadence.",
+      aiNotes: "Well-structured compromise framework with objective scorecards for competing demands.",
+      componentScores: {
+        relevance: 84,
+        technicalAccuracy: 78,
+        depthAndCompleteness: 75,
+        clarityAndStructure: 82,
+        examples: 76
+      },
+      dimensionalScores: {
+        relevance: 84,
+        starStructure: 80,
+        quantifiableImpact: 72,
+        technicalPrecision: 78,
+        seniorityCalibration: 80
+      },
+      starAnalysis: {
+        situation: "Friction between growth hacking demands and engineering infrastructure stability.",
+        task: "Create an objective prioritization framework preventing roadmap deadlock.",
+        action: "Introduced 70/20/10 capacity sharing and quantified risk vs revenue scorecards.",
+        result: "Reduced prioritization disputes and guaranteed ongoing refactoring bandwidth."
+      },
+      scoreBoosterRewrite: "Explain a specific high-stakes trade-off where a growth test was delayed to prevent database outage.",
+      highlights: [
+        { text: "70/20/10 capacity allocation framework", type: "positive", label: "Operational Framework" },
+        { text: "system stability risk scores", type: "positive", label: "Objective Risk Model" }
       ]
     }
   ],
@@ -204,7 +358,8 @@ export const SAMPLE_REPORT: InterviewReport = {
     { questionIndex: 1, label: "Q1: Deadline & Debt", confidence: 88, clarity: 90, stressLevel: 22 },
     { questionIndex: 2, label: "Q2: Leadership Conflict", confidence: 94, clarity: 95, stressLevel: 15 },
     { questionIndex: 3, label: "Q3: Metrics & Telemetry", confidence: 76, clarity: 82, stressLevel: 38 },
-    { questionIndex: 4, label: "Q4: Production Outage", confidence: 82, clarity: 88, stressLevel: 28 }
+    { questionIndex: 4, label: "Q4: System Audit", confidence: 86, clarity: 88, stressLevel: 24 },
+    { questionIndex: 5, label: "Q5: Priority Conflict", confidence: 80, clarity: 84, stressLevel: 30 }
   ]
 };
 

@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { AppTab, InterviewConfig, Question } from '../types';
-import { MicCheck } from '../components/MicCheck';
 import { TARGET_COMPANY_DIRECTORY, TARGET_ROLE_DIRECTORY, TargetRoleOption } from '../data/careerDirectory';
+import { FIXED_QUESTIONS_PER_INTERVIEW, TOTAL_MARKS_POOL, calculateTotalPossibleMarks } from '../data/scoringConfig';
 import { 
   Settings, 
   Search, 
@@ -18,8 +18,7 @@ import {
   AlertTriangle,
   RotateCcw,
   Zap,
-  Globe,
-  GraduationCap
+  Globe
 } from 'lucide-react';
 
 interface SetupViewProps {
@@ -52,25 +51,23 @@ export const SetupView: React.FC<SetupViewProps> = ({
 }) => {
   const [roleInput, setRoleInput] = useState(config.role);
   const [companyInput, setCompanyInput] = useState(config.company);
-  const [levelInput, setLevelInput] = useState(config.level);
-  const [difficultyInput, setDifficultyInput] = useState<'Easy' | 'Medium' | 'Hard' | 'Expert'>(config.difficulty || 'Medium');
-  const [durationInput, setDurationInput] = useState(config.durationMinutes);
+  const [levelInput, setLevelInput] = useState<InterviewConfig['level']>(config.level === ('Executive / Director' as any) ? 'Senior / Lead' : config.level);
+  const [difficultyInput, setDifficultyInput] = useState<'Easy' | 'Medium' | 'Hard'>(config.difficulty === ('Expert' as any) ? 'Medium' : (config.difficulty || 'Medium'));
+  const [durationInput, setDurationInput] = useState(config.durationMinutes > 45 ? 30 : (config.durationMinutes || 30));
   const [customNotes, setCustomNotes] = useState(config.customNotes || "");
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Directory filters
   const [selectedRoleDept, setSelectedRoleDept] = useState<string>('All');
-  const [onlyFresherRoles, setOnlyFresherRoles] = useState<boolean>(false);
   const [selectedCompanyIndustry, setSelectedCompanyIndustry] = useState<string>('All');
 
   const filteredRoles = useMemo(() => {
     return TARGET_ROLE_DIRECTORY.filter(r => {
       const matchDept = selectedRoleDept === 'All' || r.department === selectedRoleDept;
-      const matchFresher = !onlyFresherRoles || r.isFresherFriendly;
-      return matchDept && matchFresher;
+      return matchDept && r.isFresherFriendly;
     });
-  }, [selectedRoleDept, onlyFresherRoles]);
+  }, [selectedRoleDept]);
 
   const filteredCompanies = useMemo(() => {
     if (selectedCompanyIndustry === 'All') return TARGET_COMPANY_DIRECTORY;
@@ -205,21 +202,6 @@ export const SetupView: React.FC<SetupViewProps> = ({
                 <p className="text-[11px] text-slate-400">Target entry-level, fresher, or specialized domain roles across India & globally</p>
               </div>
             </div>
-
-            {/* Fresher Filter Toggle */}
-            <button
-              type="button"
-              onClick={() => setOnlyFresherRoles(!onlyFresherRoles)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold transition-all cursor-pointer ${
-                onlyFresherRoles 
-                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-sm shadow-emerald-500/10' 
-                  : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-slate-300'
-              }`}
-            >
-              <GraduationCap className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Fresher-Friendly Only</span>
-              {onlyFresherRoles && <span className="ml-1 px-1.5 py-0.2 bg-emerald-500 text-slate-950 rounded-full text-[9px] font-bold">Active</span>}
-            </button>
           </div>
 
           {/* Search/Custom Role Input with Datalist */}
@@ -234,8 +216,8 @@ export const SetupView: React.FC<SetupViewProps> = ({
               className="w-full bg-slate-950 border border-slate-800 rounded-2xl pl-10 pr-4 py-3 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
             />
             <datalist id="setup-roles-datalist">
-              {TARGET_ROLE_DIRECTORY.map(r => (
-                <option key={r.title} value={r.title}>{`${r.department} • ${r.isFresherFriendly ? 'Fresher-Friendly' : 'Standard'}`}</option>
+              {TARGET_ROLE_DIRECTORY.filter(r => r.isFresherFriendly).map(r => (
+                <option key={r.title} value={r.title}>{`${r.department} • Fresher-Friendly`}</option>
               ))}
             </datalist>
           </div>
@@ -324,7 +306,7 @@ export const SetupView: React.FC<SetupViewProps> = ({
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-300">Seniority Level (Job Scope)</label>
               <div className="space-y-2">
-                {(['Junior / Entry', 'Mid-Level', 'Senior / Lead', 'Executive / Director'] as const).map((lvl) => (
+                {(['Junior / Entry', 'Mid-Level', 'Senior / Lead'] as const).map((lvl) => (
                   <label
                     key={lvl}
                     className={`flex items-center justify-between p-3 rounded-xl border text-xs cursor-pointer transition-colors ${
@@ -357,7 +339,6 @@ export const SetupView: React.FC<SetupViewProps> = ({
                   { key: 'Easy', desc: 'Fundamentals & definitions (Direct answers reach 70-85)' },
                   { key: 'Medium', desc: 'Applied scenarios & reasoning (Need examples for 70+)' },
                   { key: 'Hard', desc: 'Trade-offs & edge cases (Shallow answers capped at 65)' },
-                  { key: 'Expert', desc: 'Ambiguous systems, failure modes & deep architecture' },
                 ].map((d) => (
                   <label
                     key={d.key}
@@ -447,26 +428,25 @@ export const SetupView: React.FC<SetupViewProps> = ({
               </div>
             </div>
 
-            {/* Duration Slider */}
+            {/* Duration Slider (Controls Session Pacing) */}
             <div className="space-y-2">
               <div className="flex justify-between text-xs">
                 <span className="font-bold text-slate-300">Interview Length</span>
-                <span className="font-mono font-bold text-cyan-400">{durationInput} Minutes ({durationInput <= 15 ? 3 : durationInput <= 30 ? 5 : durationInput <= 45 ? 7 : 9} Questions)</span>
+                <span className="font-mono font-bold text-cyan-400">{durationInput} Minutes • {FIXED_QUESTIONS_PER_INTERVIEW} Questions ({TOTAL_MARKS_POOL} Marks Pool)</span>
               </div>
               <input
                 type="range"
                 min="15"
-                max="60"
+                max="45"
                 step="15"
                 value={durationInput}
                 onChange={(e) => setDurationInput(Number(e.target.value))}
                 className="w-full accent-indigo-500 cursor-pointer"
               />
               <div className="flex justify-between text-[10px] text-slate-500">
-                <span>15 min (3 Qs)</span>
-                <span>30 min (5 Qs)</span>
-                <span>45 min (7 Qs)</span>
-                <span>60 min (9 Qs)</span>
+                <span>15 min (Fast Pacing)</span>
+                <span>30 min (Standard Pacing)</span>
+                <span>45 min (Detailed Pacing)</span>
               </div>
             </div>
 
@@ -483,9 +463,6 @@ export const SetupView: React.FC<SetupViewProps> = ({
             />
           </div>
         </div>
-
-        {/* Step 3: Integrated Mic Calibration Component */}
-        <MicCheck />
 
         {/* Error Banner */}
         {errorMessage && (
